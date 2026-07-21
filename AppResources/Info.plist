@@ -8,6 +8,8 @@
     <string>Claude Usage Dashboard</string>
     <key>CFBundleIdentifier</key>
     <string>com.ngoujon.claudeusagedashboard</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
     <key>CFBundleVersion</key>
     <string>1.0</string>
     <key>CFBundleShortVersionString</key>
