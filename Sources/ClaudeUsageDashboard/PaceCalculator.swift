@@ -79,8 +79,9 @@ enum PaceCalculator {
     static func formatAbsoluteReset(_ date: Date?) -> String {
         guard let date else { return "pas encore utilisé" }
         let formatter = DateFormatter()
-        formatter.dateFormat = "dd/MM 'à' HH:mm"
-        return formatter.string(from: date)
+        formatter.locale = Locale(identifier: "fr_FR")
+        formatter.dateFormat = "EEEE d MMMM 'à' HH:mm"
+        return formatter.string(from: date).prefix(1).capitalized + formatter.string(from: date).dropFirst()
     }
 
     static func formatRemainingCompact(_ date: Date?) -> String {

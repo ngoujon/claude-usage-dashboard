@@ -9,7 +9,7 @@ final class DashboardWindowController: NSWindowController, NSWindowDelegate {
     private let usageService: UsageService
     private let displaySleepBlocker = DisplaySleepBlocker()
 
-    init(usageService: UsageService) {
+    init(usageService: UsageService, gitWatcher: GitWatcher, urlMonitor: URLMonitor) {
         self.usageService = usageService
 
         let window = NSWindow(
@@ -25,7 +25,7 @@ final class DashboardWindowController: NSWindowController, NSWindowDelegate {
         window.center()
         window.collectionBehavior = [.fullScreenPrimary]
         window.isReleasedWhenClosed = false
-        window.contentView = NSHostingView(rootView: DashboardView(usageService: usageService))
+        window.contentView = NSHostingView(rootView: DashboardView(usageService: usageService, gitWatcher: gitWatcher, urlMonitor: urlMonitor))
         window.delegate = self
     }
 
