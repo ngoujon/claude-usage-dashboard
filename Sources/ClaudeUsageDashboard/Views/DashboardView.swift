@@ -373,11 +373,28 @@ private struct KPICard: View {
 
     var body: some View {
         VStack(spacing: 14) {
-            Text(title)
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundStyle(.gray)
+            HStack(spacing: 8) {
+                Text(title)
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundStyle(.gray)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+
+                Spacer(minLength: 8)
+
+                HStack(spacing: 5) {
+                    Image(systemName: rhythmIcon)
+                    Text(rhythmText)
+                }
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(color)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .background(color.opacity(0.15))
+                .clipShape(Capsule())
                 .lineLimit(1)
-                .minimumScaleFactor(0.6)
+                .fixedSize(horizontal: true, vertical: false)
+            }
 
             ZStack {
                 Circle()
@@ -414,17 +431,6 @@ private struct KPICard: View {
                 .background(Color.white.opacity(0.1))
 
             VStack(spacing: 12) {
-                HStack(spacing: 6) {
-                    Image(systemName: rhythmIcon)
-                    Text(rhythmText)
-                }
-                .font(.system(size: 17, weight: .semibold))
-                .foregroundStyle(color)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 7)
-                .background(color.opacity(0.15))
-                .clipShape(Capsule())
-
                 PaceDetailRow(icon: "chart.line.uptrend.xyaxis", label: "Projection à l'échéance", value: projectionText)
                 PaceDetailRow(icon: "bolt.fill", label: "Budget restant", value: budgetText)
             }
