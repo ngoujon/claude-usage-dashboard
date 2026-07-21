@@ -366,13 +366,6 @@ private struct KPICard: View {
             .frame(width: 160, height: 160)
 
             VStack(spacing: 6) {
-                Text("RESET DANS  (JJ:HH:MM:SS)")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.45))
-                    .tracking(1)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
-
                 TimelineView(.periodic(from: .now, by: 1)) { context in
                     Text(PaceCalculator.formatCountdown(limit.resetsAt, now: context.date))
                         .font(.system(size: 44, weight: .bold, design: .monospaced))

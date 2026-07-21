@@ -12,7 +12,7 @@ final class GitWatcher: ObservableObject {
     @Published private(set) var lastCheckedAt: Date?
 
     private let root = URL(fileURLWithPath: "~/Developer")
-    private let checkInterval: TimeInterval = 30 * 60
+    private let checkInterval: TimeInterval = 60
     private var timer: Timer?
 
     func start() {
