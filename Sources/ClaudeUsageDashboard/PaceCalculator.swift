@@ -65,18 +65,15 @@ enum PaceCalculator {
     }
 
     static func formatCountdown(_ date: Date?, now: Date = Date()) -> String {
-        guard let date else { return "—:—:—" }
+        guard let date else { return "—:—:—:—" }
         let delta = date.timeIntervalSince(now)
-        if delta <= 0 { return "00:00:00" }
+        if delta <= 0 { return "00:00:00:00" }
         let total = Int(delta)
         let days = total / 86400
         let hours = (total % 86400) / 3600
         let minutes = (total % 3600) / 60
         let seconds = total % 60
-        if days > 0 {
-            return String(format: "%dj %02d:%02d:%02d", days, hours, minutes, seconds)
-        }
-        return String(format: "%02d:%02d:%02d", hours, minutes, seconds)
+        return String(format: "%02d:%02d:%02d:%02d", days, hours, minutes, seconds)
     }
 
     static func formatAbsoluteReset(_ date: Date?) -> String {

@@ -29,11 +29,11 @@ struct DashboardView: View {
             || usageService.snapshot.weekly != nil
             || usageService.snapshot.fable != nil
 
-        VStack(spacing: 32) {
+        VStack(spacing: 20) {
             header
 
             if hasData {
-                HStack(spacing: 24) {
+                HStack(spacing: 14) {
                     if let session = usageService.snapshot.session {
                         KPICard(title: "Session (5h)", limit: session)
                     }
@@ -44,21 +44,21 @@ struct DashboardView: View {
                         KPICard(title: "Fable (hebdo)", limit: fable)
                     }
                 }
-                .padding(.horizontal, 40)
+                .padding(.horizontal, 16)
             } else {
                 emptyState
             }
 
             Spacer()
         }
-        .padding(.top, 50)
+        .padding(.top, 20)
     }
 
     private var header: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 6) {
             ZStack {
                 Text("Suivi des quotas Claude")
-                    .font(.system(size: 34, weight: .bold, design: .rounded))
+                    .font(.system(size: 24, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
 
                 HStack {
@@ -159,10 +159,12 @@ private struct KPICard: View {
     }
 
     var body: some View {
-        VStack(spacing: 18) {
+        VStack(spacing: 14) {
             Text(title)
-                .font(.system(size: 18, weight: .semibold))
+                .font(.system(size: 20, weight: .semibold))
                 .foregroundStyle(.gray)
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
 
             ZStack {
                 Circle()
@@ -172,41 +174,45 @@ private struct KPICard: View {
                     .stroke(color, style: StrokeStyle(lineWidth: 14, lineCap: .round))
                     .rotationEffect(.degrees(-90))
                 Text(limit.formattedPercent)
-                    .font(.system(size: 38, weight: .bold, design: .rounded))
+                    .font(.system(size: 46, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
             }
-            .frame(width: 140, height: 140)
+            .frame(width: 160, height: 160)
 
-            VStack(spacing: 4) {
-                Text("RESET DANS")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.4))
-                    .tracking(1.2)
+            VStack(spacing: 6) {
+                Text("RESET DANS  (JJ:HH:MM:SS)")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.45))
+                    .tracking(1)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
 
                 TimelineView(.periodic(from: .now, by: 1)) { context in
                     Text(PaceCalculator.formatCountdown(limit.resetsAt, now: context.date))
-                        .font(.system(size: 32, weight: .bold, design: .monospaced))
+                        .font(.system(size: 44, weight: .bold, design: .monospaced))
                         .monospacedDigit()
                         .foregroundStyle(.white)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
                 }
 
                 Text(PaceCalculator.formatAbsoluteReset(limit.resetsAt))
-                    .font(.system(size: 12))
-                    .foregroundStyle(.white.opacity(0.5))
+                    .font(.system(size: 15))
+                    .foregroundStyle(.white.opacity(0.55))
             }
 
             Divider()
                 .background(Color.white.opacity(0.1))
 
-            VStack(spacing: 10) {
+            VStack(spacing: 12) {
                 HStack(spacing: 6) {
                     Image(systemName: rhythmIcon)
                     Text(rhythmText)
                 }
-                .font(.system(size: 14, weight: .semibold))
+                .font(.system(size: 17, weight: .semibold))
                 .foregroundStyle(color)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 7)
                 .background(color.opacity(0.15))
                 .clipShape(Capsule())
 
@@ -214,7 +220,7 @@ private struct KPICard: View {
                 PaceDetailRow(icon: "bolt.fill", label: "Budget restant", value: budgetText)
             }
         }
-        .padding(24)
+        .padding(18)
         .frame(maxWidth: .infinity)
         .background(Color.white.opacity(0.05))
         .clipShape(RoundedRectangle(cornerRadius: 20))
@@ -229,15 +235,17 @@ private struct PaceDetailRow: View {
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: icon)
-                .font(.system(size: 12))
+                .font(.system(size: 14))
                 .foregroundStyle(.white.opacity(0.4))
-                .frame(width: 14)
+                .frame(width: 16)
             Text(label)
-                .font(.system(size: 12))
+                .font(.system(size: 14))
                 .foregroundStyle(.white.opacity(0.6))
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
             Spacer()
             Text(value)
-                .font(.system(size: 13, weight: .semibold))
+                .font(.system(size: 16, weight: .semibold))
                 .foregroundStyle(.white)
         }
     }
