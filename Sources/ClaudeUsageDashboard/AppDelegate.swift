@@ -7,6 +7,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let usageService = UsageService()
     private let gitWatcher = GitWatcher()
     private let urlMonitor = URLMonitor()
+    private let updateRunner = UpdateRunner()
     private var dashboardWindowController: DashboardWindowController?
     private var urlMonitorWindowController: URLMonitorWindowController?
     private var cancellables = Set<AnyCancellable>()
@@ -20,6 +21,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.updateStatusTitle()
             }
             .store(in: &cancellables)
+
+        updateRunner.onJobFinished = { [weak gitWatcher] projectID, exitCode in
+            guard exitCode == 0 else { return }
+            gitWatcher?.markDeployed(projectID)
+        }
 
         usageService.start()
         gitWatcher.start()
@@ -53,7 +59,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func showDashboard() {
         if dashboardWindowController == nil {
-            dashboardWindowController = DashboardWindowController(usageService: usageService, gitWatcher: gitWatcher, urlMonitor: urlMonitor)
+            dashboardWindowController = DashboardWindowController(
+                usageService: usageService,
+                gitWatcher: gitWatcher,
+                urlMonitor: urlMonitor,
+                updateRunner: updateRunner
+            )
         }
         NSApp.activate(ignoringOtherApps: true)
         dashboardWindowController?.showWindow(nil)

@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 struct URLMonitorSettingsView: View {
@@ -17,6 +18,12 @@ struct URLMonitorSettingsView: View {
                 .font(.system(.body, design: .monospaced))
                 .frame(height: 220)
                 .border(Color.gray.opacity(0.3))
+
+            HStack {
+                Button("Coller") { pasteFromClipboard() }
+                Button("Copier") { copyToClipboard() }
+                Spacer()
+            }
 
             if !urlMonitor.urls.isEmpty {
                 statusList
@@ -62,5 +69,19 @@ struct URLMonitorSettingsView: View {
     private func save() {
         let lines = text.components(separatedBy: .newlines)
         urlMonitor.updateURLs(lines)
+    }
+
+    private func pasteFromClipboard() {
+        guard let clipboardString = NSPasteboard.general.string(forType: .string) else { return }
+        if text.isEmpty || text.hasSuffix("\n") {
+            text += clipboardString
+        } else {
+            text += "\n" + clipboardString
+        }
+    }
+
+    private func copyToClipboard() {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
     }
 }

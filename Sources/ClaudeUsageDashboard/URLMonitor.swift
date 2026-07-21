@@ -5,6 +5,7 @@ struct MonitoredURLStatus: Identifiable {
     var isDown: Bool
     var lastCheck: Date?
     var detail: String?
+    var title: String?
 }
 
 @MainActor
@@ -50,7 +51,7 @@ final class URLMonitor: ObservableObject {
         request.httpMethod = "GET"
 
         do {
-            let (_, response) = try await URLSession.shared.data(for: request)
+            let (data, response) = try await URLSession.shared.data(for: request)
             let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
             let isServerError = statusCode >= 500
 
@@ -58,15 +59,40 @@ final class URLMonitor: ObservableObject {
                 id: urlString,
                 isDown: isServerError,
                 lastCheck: Date(),
-                detail: isServerError ? "HTTP \(statusCode)" : nil
+                detail: isServerError ? "HTTP \(statusCode)" : nil,
+                title: Self.extractTitle(from: data) ?? statuses[urlString]?.title
             )
         } catch {
             statuses[urlString] = MonitoredURLStatus(
                 id: urlString,
                 isDown: true,
                 lastCheck: Date(),
-                detail: error.localizedDescription
+                detail: error.localizedDescription,
+                title: statuses[urlString]?.title
             )
         }
+    }
+
+    nonisolated private static func extractTitle(from data: Data) -> String? {
+        guard let html = String(data: data, encoding: .utf8) ?? String(data: data, encoding: .isoLatin1) else {
+            return nil
+        }
+        guard let openRange = html.range(of: "<title", options: [.caseInsensitive]),
+              let tagCloseRange = html.range(of: ">", range: openRange.upperBound..<html.endIndex),
+              let closeRange = html.range(of: "</title>", options: [.caseInsensitive], range: tagCloseRange.upperBound..<html.endIndex)
+        else {
+            return nil
+        }
+
+        let raw = html[tagCloseRange.upperBound..<closeRange.lowerBound]
+        let decoded = raw
+            .replacingOccurrences(of: "&amp;", with: "&")
+            .replacingOccurrences(of: "&lt;", with: "<")
+            .replacingOccurrences(of: "&gt;", with: ">")
+            .replacingOccurrences(of: "&quot;", with: "\"")
+            .replacingOccurrences(of: "&#39;", with: "'")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        return decoded.isEmpty ? nil : decoded
     }
 }

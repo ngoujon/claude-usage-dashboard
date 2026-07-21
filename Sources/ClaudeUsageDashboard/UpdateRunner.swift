@@ -1,0 +1,136 @@
+import Darwin
+import Foundation
+
+struct UpdateJobState: Equatable {
+    var isRunning: Bool = false
+    var output: String = ""
+    var exitCode: Int32?
+}
+
+@MainActor
+final class UpdateRunner: ObservableObject {
+    @Published private(set) var jobs: [String: UpdateJobState] = [:]
+    private var processes: [String: Process] = [:]
+    /// Called on the main actor when a job finishes, with the project id and exit code.
+    var onJobFinished: ((String, Int32) -> Void)?
+
+    func state(for projectID: String) -> UpdateJobState {
+        jobs[projectID] ?? UpdateJobState()
+    }
+
+    func clearOutput(for projectID: String) {
+        var state = jobs[projectID] ?? UpdateJobState()
+        state.output = ""
+        jobs[projectID] = state
+    }
+
+    func run(_ project: UpdateProject) {
+        guard jobs[project.id]?.isRunning != true else { return }
+        jobs[project.id] = UpdateJobState(isRunning: true, output: "$ \(project.scriptPath)\n\n", exitCode: nil)
+
+        // Some update scripts run `ssh -t` (e.g. for sudo prompts on the remote host),
+        // which refuses to proceed — "Pseudo-terminal will not be allocated because
+        // stdin is not a terminal" — when the local process's stdin is a plain pipe or
+        // /dev/null. Give the child a real pseudo-terminal on stdin/stdout/stderr so it
+        // behaves exactly as it would when run by hand in Terminal.app.
+        guard let pty = Self.openPTY() else {
+            jobs[project.id] = UpdateJobState(
+                isRunning: false,
+                output: "Erreur : impossible d'allouer un pseudo-terminal.\n",
+                exitCode: -1
+            )
+            return
+        }
+
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: project.scriptPath)
+        process.currentDirectoryURL = URL(fileURLWithPath: project.projectPath)
+        process.environment = Self.buildEnvironment()
+        process.standardInput = pty.slave
+        process.standardOutput = pty.slave
+        process.standardError = pty.slave
+
+        let projectID = project.id
+        pty.master.readabilityHandler = { [weak self] handle in
+            let data = handle.availableData
+            guard !data.isEmpty else { return }
+            let text = String(data: data, encoding: .utf8) ?? ""
+            Task { @MainActor in
+                self?.appendOutput(text, to: projectID)
+            }
+        }
+
+        process.terminationHandler = { [weak self] proc in
+            pty.master.readabilityHandler = nil
+            try? pty.master.close()
+            Task { @MainActor in
+                self?.finish(projectID, exitCode: proc.terminationStatus)
+            }
+        }
+
+        do {
+            try process.run()
+            // The child now holds the slave end; drop our copy so the master sees EOF
+            // once the child (and anything it spawned) actually exits.
+            try? pty.slave.close()
+            processes[project.id] = process
+        } catch {
+            pty.master.readabilityHandler = nil
+            try? pty.master.close()
+            try? pty.slave.close()
+            jobs[project.id] = UpdateJobState(
+                isRunning: false,
+                output: "Erreur au lancement : \(error.localizedDescription)\n",
+                exitCode: -1
+            )
+        }
+    }
+
+    private struct PTY {
+        let master: FileHandle
+        let slave: FileHandle
+    }
+
+    private static func openPTY() -> PTY? {
+        let masterFD = posix_openpt(O_RDWR | O_NOCTTY)
+        guard masterFD >= 0 else { return nil }
+        guard grantpt(masterFD) == 0, unlockpt(masterFD) == 0,
+              let slaveNameCStr = ptsname(masterFD) else {
+            close(masterFD)
+            return nil
+        }
+        let slaveFD = open(slaveNameCStr, O_RDWR | O_NOCTTY)
+        guard slaveFD >= 0 else {
+            close(masterFD)
+            return nil
+        }
+        return PTY(
+            master: FileHandle(fileDescriptor: masterFD, closeOnDealloc: true),
+            slave: FileHandle(fileDescriptor: slaveFD, closeOnDealloc: true)
+        )
+    }
+
+    private func appendOutput(_ text: String, to projectID: String) {
+        var state = jobs[projectID] ?? UpdateJobState()
+        state.output += text
+        jobs[projectID] = state
+    }
+
+    private func finish(_ projectID: String, exitCode: Int32) {
+        var state = jobs[projectID] ?? UpdateJobState()
+        state.isRunning = false
+        state.exitCode = exitCode
+        state.output += "\n[terminé — code \(exitCode)]\n"
+        jobs[projectID] = state
+        processes[projectID] = nil
+        onJobFinished?(projectID, exitCode)
+    }
+
+    private static func buildEnvironment() -> [String: String] {
+        var env = ProcessInfo.processInfo.environment
+        let extraPaths = ["/opt/homebrew/bin", "/opt/homebrew/sbin", "/usr/local/bin"]
+        let currentPath = env["PATH"] ?? "/usr/bin:/bin:/usr/sbin:/sbin"
+        env["PATH"] = (extraPaths + [currentPath]).joined(separator: ":")
+        return env
+    }
+}

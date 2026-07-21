@@ -4,23 +4,37 @@ struct DashboardView: View {
     @ObservedObject var usageService: UsageService
     @ObservedObject var gitWatcher: GitWatcher
     @ObservedObject var urlMonitor: URLMonitor
+    @ObservedObject var updateRunner: UpdateRunner
     @State private var showingSetup = false
     @State private var isRefreshing = false
     @State private var showingGitSidebar = true
     @State private var showingURLSidebar = true
+    @State private var showingUpdateCenter = false
+    @State private var updateProjects: [UpdateProject] = []
+
+    private static let workspaceRoot = URL(fileURLWithPath: "~/Developer")
 
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
-            HStack(spacing: 0) {
-                if showingGitSidebar && !gitWatcher.dirtyRepos.isEmpty {
-                    gitSidebar
-                        .transition(.move(edge: .leading))
-                }
-                content
-                if showingURLSidebar && !urlMonitor.urls.isEmpty {
-                    urlSidebar
-                        .transition(.move(edge: .trailing))
+            if showingUpdateCenter {
+                UpdateCenterView(
+                    updateRunner: updateRunner,
+                    gitWatcher: gitWatcher,
+                    projects: updateProjects,
+                    onBack: { showingUpdateCenter = false }
+                )
+            } else {
+                HStack(spacing: 0) {
+                    if showingGitSidebar && !gitWatcher.dirtyRepos.isEmpty {
+                        gitSidebar
+                            .transition(.move(edge: .leading))
+                    }
+                    content
+                    if showingURLSidebar && !urlMonitor.urls.isEmpty {
+                        urlSidebar
+                            .transition(.move(edge: .trailing))
+                    }
                 }
             }
         }
@@ -79,19 +93,13 @@ struct DashboardView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 2) {
                     ForEach(gitWatcher.dirtyRepos) { repo in
-                        HStack(spacing: 10) {
-                            Circle()
-                                .fill(repo.hasUncommittedChanges ? Color.red : Color.orange)
-                                .frame(width: 7, height: 7)
-                            Text(repo.id)
-                                .font(.system(size: 15, weight: .medium))
-                                .foregroundStyle(.white)
-                                .lineLimit(1)
-                                .truncationMode(.middle)
-                            Spacer()
+                        GitRepoRow(
+                            repo: repo,
+                            isPushing: gitWatcher.pushingRepoIDs.contains(repo.id),
+                            pushResult: gitWatcher.lastPushResults[repo.id]
+                        ) {
+                            gitWatcher.push(repo)
                         }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 10)
                     }
                 }
                 .padding(.vertical, 4)
@@ -198,6 +206,8 @@ struct DashboardView: View {
                 gitSidebarToggle
             }
 
+            updateCenterButton
+
             if !urlMonitor.urls.isEmpty {
                 urlSidebarToggle
             }
@@ -225,6 +235,23 @@ struct DashboardView: View {
         }
         .buttonStyle(.plain)
         .help(showingGitSidebar ? "Masquer les projets non commités" : "Afficher les projets non commités")
+    }
+
+    private var updateCenterButton: some View {
+        Button {
+            updateProjects = UpdateScriptScanner.scan(root: Self.workspaceRoot)
+            showingUpdateCenter = true
+        } label: {
+            Image(systemName: "terminal.fill")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(Color.white.opacity(0.08))
+                .clipShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .help("Scripts de mise à jour")
     }
 
     private var urlSidebarToggle: some View {
@@ -446,17 +473,26 @@ private struct URLStatusRow: View {
         TimelineView(.periodic(from: .now, by: 15)) { context in
             VStack(alignment: .leading, spacing: 5) {
                 HStack(alignment: .top, spacing: 8) {
-                    Text(url)
+                    Text(status?.title ?? url)
                         .font(.system(size: 14, weight: .medium))
                         .foregroundStyle(.white)
                         .lineLimit(1)
                         .truncationMode(.middle)
+                        .help(url)
 
                     Spacer()
 
                     Circle()
                         .fill(dotColor)
                         .frame(width: 10, height: 10)
+                }
+
+                if status?.title != nil {
+                    Text(url)
+                        .font(.system(size: 11))
+                        .foregroundStyle(.white.opacity(0.45))
+                        .lineLimit(1)
+                        .truncationMode(.middle)
                 }
 
                 if let lastCheck = status?.lastCheck {
@@ -490,5 +526,67 @@ private struct URLStatusRow: View {
         if minutes < 60 { return "il y a \(minutes) min" }
         let hours = minutes / 60
         return "il y a \(hours) h"
+    }
+}
+
+private struct GitRepoRow: View {
+    let repo: DirtyRepo
+    let isPushing: Bool
+    let pushResult: PushResult?
+    let onPush: () -> Void
+
+    private var isPushable: Bool {
+        !repo.hasUncommittedChanges && repo.hasUnpushedCommits
+    }
+
+    private var helpText: String {
+        if isPushing { return "Push en cours…" }
+        if case .failure(let message) = pushResult { return message }
+        if isPushable { return "Cliquer pour pousser vers GitHub" }
+        return "Modifications non commitées — rien à pousser"
+    }
+
+    var body: some View {
+        Button(action: onPush) {
+            HStack(spacing: 10) {
+                ZStack {
+                    if isPushing {
+                        ProgressView()
+                            .controlSize(.mini)
+                    } else {
+                        Circle()
+                            .fill(repo.hasUncommittedChanges ? Color.red : Color.orange)
+                            .frame(width: 7, height: 7)
+                    }
+                }
+                .frame(width: 10, height: 10)
+
+                Text(repo.id)
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+
+                Spacer()
+
+                if !isPushing {
+                    if case .failure = pushResult {
+                        Image(systemName: "exclamationmark.circle.fill")
+                            .font(.system(size: 13))
+                            .foregroundStyle(.red)
+                    } else if isPushable {
+                        Image(systemName: "arrow.up.circle")
+                            .font(.system(size: 13))
+                            .foregroundStyle(.white.opacity(0.35))
+                    }
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(!isPushable || isPushing)
+        .help(helpText)
     }
 }

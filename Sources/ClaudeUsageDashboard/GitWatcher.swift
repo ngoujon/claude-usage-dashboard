@@ -2,14 +2,24 @@ import Foundation
 
 struct DirtyRepo: Identifiable, Equatable {
     let id: String
+    var path: String
     var hasUncommittedChanges: Bool
     var hasUnpushedCommits: Bool
+}
+
+enum PushResult: Equatable {
+    case success
+    case failure(String)
 }
 
 @MainActor
 final class GitWatcher: ObservableObject {
     @Published private(set) var dirtyRepos: [DirtyRepo] = []
     @Published private(set) var lastCheckedAt: Date?
+    @Published private(set) var pushingRepoIDs: Set<String> = []
+    @Published private(set) var lastPushResults: [String: PushResult] = [:]
+    /// Projects successfully pushed to GitHub whose deploy script hasn't run since.
+    @Published private(set) var pendingDeployProjectIDs: Set<String> = []
 
     private let root = URL(fileURLWithPath: "~/Developer")
     private let checkInterval: TimeInterval = 60
@@ -29,6 +39,57 @@ final class GitWatcher: ObservableObject {
     func check() async {
         dirtyRepos = await Self.scanRepos(root: root)
         lastCheckedAt = Date()
+    }
+
+    func push(_ repo: DirtyRepo) {
+        guard !pushingRepoIDs.contains(repo.id) else { return }
+        pushingRepoIDs.insert(repo.id)
+        lastPushResults[repo.id] = nil
+
+        Task {
+            let result = await Self.runPush(at: repo.path)
+            pushingRepoIDs.remove(repo.id)
+            lastPushResults[repo.id] = result
+            if case .success = result {
+                pendingDeployProjectIDs.insert(repo.id)
+            }
+            await check()
+        }
+    }
+
+    func markDeployed(_ projectID: String) {
+        pendingDeployProjectIDs.remove(projectID)
+    }
+
+    nonisolated private static func runPush(at path: String) async -> PushResult {
+        await Task.detached(priority: .userInitiated) {
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/usr/bin/git")
+            process.arguments = ["-C", path, "push"]
+            process.environment = (ProcessInfo.processInfo.environment).merging(
+                ["GIT_TERMINAL_PROMPT": "0"], uniquingKeysWith: { _, new in new }
+            )
+
+            let errorPipe = Pipe()
+            process.standardOutput = Pipe()
+            process.standardError = errorPipe
+
+            do {
+                try process.run()
+                process.waitUntilExit()
+            } catch {
+                return .failure(error.localizedDescription)
+            }
+
+            if process.terminationStatus == 0 {
+                return .success
+            }
+
+            let data = errorPipe.fileHandleForReading.readDataToEndOfFile()
+            let message = String(data: data, encoding: .utf8)?
+                .trimmingCharacters(in: .whitespacesAndNewlines) ?? "Échec du push"
+            return .failure(message.isEmpty ? "Échec du push (code \(process.terminationStatus))" : message)
+        }.value
     }
 
     nonisolated private static func scanRepos(root: URL) async -> [DirtyRepo] {
@@ -85,6 +146,7 @@ final class GitWatcher: ObservableObject {
 
         return DirtyRepo(
             id: repoURL.lastPathComponent,
+            path: repoURL.path,
             hasUncommittedChanges: hasUncommittedChanges,
             hasUnpushedCommits: hasUnpushedCommits
         )
