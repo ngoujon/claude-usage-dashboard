@@ -20,9 +20,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         usageService.start()
 
-        if usageService.config == nil {
-            showDashboard()
-        }
+        showDashboard()
     }
 
     private func setupStatusItem() {
