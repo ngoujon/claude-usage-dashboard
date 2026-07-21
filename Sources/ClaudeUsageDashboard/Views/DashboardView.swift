@@ -71,14 +71,18 @@ struct DashboardView: View {
         }
     }
 
+    private func triggerRefresh() {
+        guard !isRefreshing else { return }
+        isRefreshing = true
+        Task {
+            await usageService.refresh()
+            isRefreshing = false
+        }
+    }
+
     private var refreshButton: some View {
         Button {
-            guard !isRefreshing else { return }
-            isRefreshing = true
-            Task {
-                await usageService.refresh()
-                isRefreshing = false
-            }
+            triggerRefresh()
         } label: {
             Image(systemName: "arrow.clockwise")
                 .font(.system(size: 16, weight: .semibold))
@@ -90,7 +94,8 @@ struct DashboardView: View {
                 .clipShape(Circle())
         }
         .buttonStyle(.plain)
-        .help("Rafraîchir maintenant")
+        .keyboardShortcut(.space, modifiers: [])
+        .help("Rafraîchir maintenant (barre d'espace)")
     }
 
     @ViewBuilder
