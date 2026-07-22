@@ -24,9 +24,31 @@ final class UpdateRunner: ObservableObject {
         jobs[projectID] = state
     }
 
+    static let buildCommand = "docker compose down && docker compose build --no-cache && docker compose up -d"
+
     func run(_ project: UpdateProject) {
-        guard jobs[project.id]?.isRunning != true else { return }
-        jobs[project.id] = UpdateJobState(isRunning: true, output: "$ \(project.scriptPath)\n\n", exitCode: nil)
+        launch(
+            projectID: project.id,
+            projectPath: project.projectPath,
+            executableURL: URL(fileURLWithPath: project.scriptPath),
+            arguments: [],
+            displayCommand: project.scriptPath
+        )
+    }
+
+    func runBuild(_ project: UpdateProject) {
+        launch(
+            projectID: project.id,
+            projectPath: project.projectPath,
+            executableURL: URL(fileURLWithPath: "/bin/zsh"),
+            arguments: ["-lc", Self.buildCommand],
+            displayCommand: Self.buildCommand
+        )
+    }
+
+    private func launch(projectID: String, projectPath: String, executableURL: URL, arguments: [String], displayCommand: String) {
+        guard jobs[projectID]?.isRunning != true else { return }
+        jobs[projectID] = UpdateJobState(isRunning: true, output: "$ \(displayCommand)\n\n", exitCode: nil)
 
         // Some update scripts run `ssh -t` (e.g. for sudo prompts on the remote host),
         // which refuses to proceed — "Pseudo-terminal will not be allocated because
@@ -34,7 +56,7 @@ final class UpdateRunner: ObservableObject {
         // /dev/null. Give the child a real pseudo-terminal on stdin/stdout/stderr so it
         // behaves exactly as it would when run by hand in Terminal.app.
         guard let pty = Self.openPTY() else {
-            jobs[project.id] = UpdateJobState(
+            jobs[projectID] = UpdateJobState(
                 isRunning: false,
                 output: "Erreur : impossible d'allouer un pseudo-terminal.\n",
                 exitCode: -1
@@ -43,14 +65,14 @@ final class UpdateRunner: ObservableObject {
         }
 
         let process = Process()
-        process.executableURL = URL(fileURLWithPath: project.scriptPath)
-        process.currentDirectoryURL = URL(fileURLWithPath: project.projectPath)
+        process.executableURL = executableURL
+        process.arguments = arguments
+        process.currentDirectoryURL = URL(fileURLWithPath: projectPath)
         process.environment = Self.buildEnvironment()
         process.standardInput = pty.slave
         process.standardOutput = pty.slave
         process.standardError = pty.slave
 
-        let projectID = project.id
         pty.master.readabilityHandler = { [weak self] handle in
             let data = handle.availableData
             guard !data.isEmpty else { return }
@@ -73,12 +95,12 @@ final class UpdateRunner: ObservableObject {
             // The child now holds the slave end; drop our copy so the master sees EOF
             // once the child (and anything it spawned) actually exits.
             try? pty.slave.close()
-            processes[project.id] = process
+            processes[projectID] = process
         } catch {
             pty.master.readabilityHandler = nil
             try? pty.master.close()
             try? pty.slave.close()
-            jobs[project.id] = UpdateJobState(
+            jobs[projectID] = UpdateJobState(
                 isRunning: false,
                 output: "Erreur au lancement : \(error.localizedDescription)\n",
                 exitCode: -1

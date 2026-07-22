@@ -212,6 +212,29 @@ struct UpdateCenterView: View {
 
             if let project = selectedProject, let state {
                 Button {
+                    updateRunner.runBuild(project)
+                } label: {
+                    HStack(spacing: 6) {
+                        if state.isRunning {
+                            ProgressView()
+                                .controlSize(.small)
+                        } else {
+                            Image(systemName: "hammer")
+                        }
+                        Text(state.isRunning ? "En cours…" : "Build")
+                    }
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .background(Color.purple.opacity(0.25))
+                    .clipShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .disabled(state.isRunning)
+                .help("docker compose down && docker compose build --no-cache && docker compose up -d")
+
+                Button {
                     updateRunner.run(project)
                 } label: {
                     HStack(spacing: 6) {
