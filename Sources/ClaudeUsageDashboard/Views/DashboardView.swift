@@ -5,6 +5,7 @@ struct DashboardView: View {
     @ObservedObject var gitWatcher: GitWatcher
     @ObservedObject var urlMonitor: URLMonitor
     @ObservedObject var updateRunner: UpdateRunner
+    @ObservedObject var dockerStatusMonitor: DockerStatusMonitor
     @State private var showingSetup = false
     @State private var isRefreshing = false
     @State private var showingGitSidebar = true
@@ -21,6 +22,7 @@ struct DashboardView: View {
                 UpdateCenterView(
                     updateRunner: updateRunner,
                     gitWatcher: gitWatcher,
+                    dockerStatusMonitor: dockerStatusMonitor,
                     projects: updateProjects,
                     onBack: { showingUpdateCenter = false }
                 )
@@ -240,6 +242,7 @@ struct DashboardView: View {
     private var updateCenterButton: some View {
         Button {
             updateProjects = UpdateScriptScanner.scan(root: Self.workspaceRoot)
+            dockerStatusMonitor.start(projects: updateProjects)
             showingUpdateCenter = true
         } label: {
             Image(systemName: "terminal.fill")

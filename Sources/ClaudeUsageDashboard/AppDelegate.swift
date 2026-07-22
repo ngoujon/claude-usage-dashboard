@@ -8,6 +8,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let gitWatcher = GitWatcher()
     private let urlMonitor = URLMonitor()
     private let updateRunner = UpdateRunner()
+    private let dockerStatusMonitor = DockerStatusMonitor()
     private var dashboardWindowController: DashboardWindowController?
     private var urlMonitorWindowController: URLMonitorWindowController?
     private var cancellables = Set<AnyCancellable>()
@@ -22,7 +23,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             .store(in: &cancellables)
 
-        updateRunner.onJobFinished = { [weak gitWatcher] projectID, exitCode in
+        updateRunner.onJobFinished = { [weak gitWatcher, weak dockerStatusMonitor] projectID, exitCode in
+            dockerStatusMonitor?.checkNow()
             guard exitCode == 0 else { return }
             gitWatcher?.markDeployed(projectID)
         }
@@ -63,7 +65,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 usageService: usageService,
                 gitWatcher: gitWatcher,
                 urlMonitor: urlMonitor,
-                updateRunner: updateRunner
+                updateRunner: updateRunner,
+                dockerStatusMonitor: dockerStatusMonitor
             )
         }
         NSApp.activate(ignoringOtherApps: true)

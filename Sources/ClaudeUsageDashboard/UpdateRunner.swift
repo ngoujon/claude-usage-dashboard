@@ -25,6 +25,8 @@ final class UpdateRunner: ObservableObject {
     }
 
     static let buildCommand = "docker compose down && docker compose build --no-cache && docker compose up -d"
+    static let startCommand = "docker compose up -d"
+    static let stopCommand = "docker compose down"
 
     func run(_ project: UpdateProject) {
         launch(
@@ -43,6 +45,26 @@ final class UpdateRunner: ObservableObject {
             executableURL: URL(fileURLWithPath: "/bin/zsh"),
             arguments: ["-lc", Self.buildCommand],
             displayCommand: Self.buildCommand
+        )
+    }
+
+    func runStart(_ project: UpdateProject) {
+        launch(
+            projectID: project.id,
+            projectPath: project.projectPath,
+            executableURL: URL(fileURLWithPath: "/bin/zsh"),
+            arguments: ["-lc", Self.startCommand],
+            displayCommand: Self.startCommand
+        )
+    }
+
+    func runStop(_ project: UpdateProject) {
+        launch(
+            projectID: project.id,
+            projectPath: project.projectPath,
+            executableURL: URL(fileURLWithPath: "/bin/zsh"),
+            arguments: ["-lc", Self.stopCommand],
+            displayCommand: Self.stopCommand
         )
     }
 

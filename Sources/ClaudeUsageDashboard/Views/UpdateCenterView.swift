@@ -4,6 +4,7 @@ import SwiftUI
 struct UpdateCenterView: View {
     @ObservedObject var updateRunner: UpdateRunner
     @ObservedObject var gitWatcher: GitWatcher
+    @ObservedObject var dockerStatusMonitor: DockerStatusMonitor
     let projects: [UpdateProject]
     let onBack: () -> Void
     @State private var selectedProjectID: String?
@@ -49,7 +50,7 @@ struct UpdateCenterView: View {
             .padding(.horizontal, 16)
             .padding(.top, 16)
 
-            Text("Scripts de mise à jour")
+            Text("Déploiement des projets")
                 .font(.system(size: 19, weight: .bold, design: .rounded))
                 .foregroundStyle(.white)
                 .padding(.horizontal, 16)
@@ -86,8 +87,8 @@ struct UpdateCenterView: View {
     private var legend: some View {
         HStack(spacing: 12) {
             legendItem(color: .orange, label: "à déployer")
-            legendItem(color: .green, label: "à jour")
-            legendItem(color: .red, label: "échec")
+            legendItem(color: .green, label: "docker up")
+            legendItem(color: .white.opacity(0.25), label: "docker down")
         }
     }
 
@@ -102,6 +103,7 @@ struct UpdateCenterView: View {
         let state = updateRunner.state(for: project.id)
         let isSelected = selectedProjectID == project.id
         let pendingDeploy = gitWatcher.pendingDeployProjectIDs.contains(project.id)
+        let isDockerUp = dockerStatusMonitor.statuses[project.id]?.isUp == true
 
         return Button {
             selectedProjectID = project.id
@@ -113,7 +115,7 @@ struct UpdateCenterView: View {
                             .controlSize(.small)
                     } else {
                         Circle()
-                            .fill(statusColor(state, pendingDeploy: pendingDeploy))
+                            .fill(isDockerUp ? Color.green : Color.white.opacity(0.25))
                             .frame(width: 8, height: 8)
                     }
                 }
@@ -124,6 +126,13 @@ struct UpdateCenterView: View {
                     .foregroundStyle(.white)
                     .lineLimit(1)
                     .truncationMode(.middle)
+
+                if !state.isRunning, let exitCode = state.exitCode {
+                    Image(systemName: exitCode == 0 ? "checkmark.circle.fill" : "xmark.circle.fill")
+                        .font(.system(size: 12))
+                        .foregroundStyle(exitCode == 0 ? .green : .red)
+                        .help(exitCode == 0 ? "Dernière commande terminée avec succès" : "Dernière commande en échec")
+                }
 
                 Spacer()
 
@@ -142,12 +151,6 @@ struct UpdateCenterView: View {
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .padding(.horizontal, 6)
         .help(pendingDeploy ? "Nouveau push pas encore déployé" : "")
-    }
-
-    private func statusColor(_ state: UpdateJobState, pendingDeploy: Bool) -> Color {
-        if pendingDeploy { return .orange }
-        guard let exitCode = state.exitCode else { return .white.opacity(0.25) }
-        return exitCode == 0 ? .green : .red
     }
 
     private var selectedProject: UpdateProject? {
@@ -211,6 +214,52 @@ struct UpdateCenterView: View {
             }
 
             if let project = selectedProject, let state {
+                Button {
+                    updateRunner.runStart(project)
+                } label: {
+                    HStack(spacing: 6) {
+                        if state.isRunning {
+                            ProgressView()
+                                .controlSize(.small)
+                        } else {
+                            Image(systemName: "play.fill")
+                        }
+                        Text(state.isRunning ? "En cours…" : "Start")
+                    }
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .background(Color.green.opacity(0.25))
+                    .clipShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .disabled(state.isRunning)
+                .help(UpdateRunner.startCommand)
+
+                Button {
+                    updateRunner.runStop(project)
+                } label: {
+                    HStack(spacing: 6) {
+                        if state.isRunning {
+                            ProgressView()
+                                .controlSize(.small)
+                        } else {
+                            Image(systemName: "stop.fill")
+                        }
+                        Text(state.isRunning ? "En cours…" : "Stop")
+                    }
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .background(Color.red.opacity(0.25))
+                    .clipShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .disabled(state.isRunning)
+                .help(UpdateRunner.stopCommand)
+
                 Button {
                     updateRunner.runBuild(project)
                 } label: {
