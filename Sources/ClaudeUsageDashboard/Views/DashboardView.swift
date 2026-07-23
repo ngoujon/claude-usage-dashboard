@@ -192,7 +192,7 @@ struct DashboardView: View {
                     emptyState
                 }
             }
-            .padding(.top, 20)
+            .padding(.top, 8)
             .padding(.bottom, 24)
         }
     }
