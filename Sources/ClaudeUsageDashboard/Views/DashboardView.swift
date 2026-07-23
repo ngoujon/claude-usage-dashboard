@@ -374,6 +374,13 @@ private struct KPICard: View {
         return String(format: "%.1f%%/h", pace.hourlyBudget)
     }
 
+    /// Only meaningful while ahead of pace: how long a pause would take to fall back
+    /// to "dans le rythme".
+    private var pauseText: String? {
+        guard let pace = limit.pace, pace.delta > PaceCalculator.paceTolerance else { return nil }
+        return PaceCalculator.formatDuration(pace.pauseNeeded)
+    }
+
     var body: some View {
         VStack(spacing: 14) {
             HStack(spacing: 8) {
@@ -436,6 +443,9 @@ private struct KPICard: View {
             VStack(spacing: 12) {
                 PaceDetailRow(icon: "chart.line.uptrend.xyaxis", label: "Projection à l'échéance", value: projectionText)
                 PaceDetailRow(icon: "bolt.fill", label: "Budget restant", value: budgetText)
+                if let pauseText {
+                    PaceDetailRow(icon: "pause.circle.fill", label: "Pause pour revenir dans le rythme", value: pauseText)
+                }
             }
         }
         .padding(18)

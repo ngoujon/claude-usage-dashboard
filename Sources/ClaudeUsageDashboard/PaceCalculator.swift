@@ -35,10 +35,17 @@ enum PaceCalculator {
         let remainingHours = remaining / 3600
         let hourlyBudget = remainingHours > 0 ? max(0, 100 - percent) / remainingHours : 0
 
+        // Elapsed time (within the period) at which expectedPercent would catch up to
+        // `percent - tolerance` — i.e. how long a pause (no new usage) needs to last,
+        // starting now, to bring delta back down to the edge of "dans le rythme".
+        let elapsedNeeded = (percent - paceTolerance) * period / 100
+        let pauseNeeded = max(0, elapsedNeeded - elapsed)
+
         return PaceInfo(
             delta: percent - expectedPercent,
             projectedPercent: projectedPercent,
-            hourlyBudget: hourlyBudget
+            hourlyBudget: hourlyBudget,
+            pauseNeeded: pauseNeeded
         )
     }
 
@@ -89,6 +96,19 @@ enum PaceCalculator {
         let delta = date.timeIntervalSinceNow
         if delta <= 0 { return "reset…" }
         let totalMin = Int(delta / 60)
+        let days = totalMin / 1440
+        let rem = totalMin % 1440
+        let hours = rem / 60
+        let minutes = rem % 60
+
+        if days > 0 { return "\(days)j\(hours)h" }
+        if hours > 0 { return "\(hours)h\(String(format: "%02d", minutes))" }
+        return "\(minutes)min"
+    }
+
+    static func formatDuration(_ seconds: TimeInterval) -> String {
+        guard seconds > 0 else { return "0min" }
+        let totalMin = max(1, Int(seconds / 60))
         let days = totalMin / 1440
         let rem = totalMin % 1440
         let hours = rem / 60

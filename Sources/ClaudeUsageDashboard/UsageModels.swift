@@ -32,6 +32,8 @@ struct PaceInfo {
     let delta: Double
     let projectedPercent: Double
     let hourlyBudget: Double
+    /// Time without any new usage needed to bring `delta` back down to the pace tolerance.
+    let pauseNeeded: TimeInterval
 }
 
 struct LimitDisplay {
