@@ -8,6 +8,10 @@ struct UpdateCenterView: View {
     let projects: [UpdateProject]
     let onBack: () -> Void
     @State private var selectedProjectID: String?
+    @State private var idleSince = Date()
+
+    private static let autoReturnIdleThreshold: TimeInterval = 5 * 60
+    private let autoReturnTimer = Timer.publish(every: 10, on: .main, in: .common).autoconnect()
 
     var body: some View {
         GeometryReader { geo in
@@ -25,6 +29,16 @@ struct UpdateCenterView: View {
         .onAppear {
             if selectedProjectID == nil {
                 selectedProjectID = projects.first?.id
+            }
+            idleSince = Date()
+        }
+        .onReceive(autoReturnTimer) { now in
+            guard !updateRunner.jobs.values.contains(where: { $0.isRunning }) else {
+                idleSince = now
+                return
+            }
+            if now.timeIntervalSince(idleSince) >= Self.autoReturnIdleThreshold {
+                onBack()
             }
         }
     }
