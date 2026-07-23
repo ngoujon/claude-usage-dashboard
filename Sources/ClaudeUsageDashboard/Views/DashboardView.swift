@@ -374,10 +374,9 @@ private struct KPICard: View {
         return String(format: "%.1f%%/h", pace.hourlyBudget)
     }
 
-    /// Only meaningful while ahead of pace: how long a pause would take to fall back
-    /// to "dans le rythme".
-    private var pauseText: String? {
-        guard let pace = limit.pace, pace.delta > PaceCalculator.paceTolerance else { return nil }
+    /// Only meaningful while the projection is ahead of pace (>= 101%); "N/A" otherwise.
+    private var pauseText: String {
+        guard let pace = limit.pace, pace.projectedPercent >= PaceCalculator.aheadProjectionThreshold else { return "N/A" }
         return PaceCalculator.formatDuration(pace.pauseNeeded)
     }
 
@@ -443,9 +442,7 @@ private struct KPICard: View {
             VStack(spacing: 12) {
                 PaceDetailRow(icon: "chart.line.uptrend.xyaxis", label: "Projection à l'échéance", value: projectionText)
                 PaceDetailRow(icon: "bolt.fill", label: "Budget restant", value: budgetText)
-                if let pauseText {
-                    PaceDetailRow(icon: "pause.circle.fill", label: "Pause pour revenir dans le rythme", value: pauseText)
-                }
+                PaceDetailRow(icon: "pause.circle.fill", label: "Pause pour revenir dans le rythme", value: pauseText)
             }
         }
         .padding(18)

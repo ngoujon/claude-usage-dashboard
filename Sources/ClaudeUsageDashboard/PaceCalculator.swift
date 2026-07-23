@@ -4,6 +4,10 @@ enum PaceCalculator {
     static let sessionPeriod: TimeInterval = 5 * 3600
     static let weeklyPeriod: TimeInterval = 7 * 24 * 3600
     static let paceTolerance: Double = 5
+    /// Projection thresholds for the pause-needed estimate: ahead of pace at/above 101%,
+    /// "dans le rythme" between 90% and 100%.
+    static let aheadProjectionThreshold: Double = 101
+    static let onPaceProjectionTarget: Double = 100
 
     static func parseISODate(_ iso: String?) -> Date? {
         guard let iso else { return nil }
@@ -35,10 +39,10 @@ enum PaceCalculator {
         let remainingHours = remaining / 3600
         let hourlyBudget = remainingHours > 0 ? max(0, 100 - percent) / remainingHours : 0
 
-        // Elapsed time (within the period) at which expectedPercent would catch up to
-        // `percent - tolerance` — i.e. how long a pause (no new usage) needs to last,
-        // starting now, to bring delta back down to the edge of "dans le rythme".
-        let elapsedNeeded = (percent - paceTolerance) * period / 100
+        // Elapsed time (within the period) at which projectedPercent would fall back to
+        // onPaceProjectionTarget (100%) if no new usage happens — i.e. how long a pause
+        // needs to last, starting now, to no longer be projected to overshoot.
+        let elapsedNeeded = percent * period / onPaceProjectionTarget
         let pauseNeeded = max(0, elapsedNeeded - elapsed)
 
         return PaceInfo(
