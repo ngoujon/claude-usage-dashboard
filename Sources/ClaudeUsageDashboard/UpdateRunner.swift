@@ -26,7 +26,7 @@ final class UpdateRunner: ObservableObject {
 
     static let buildCommand = "docker compose down && docker compose build --no-cache && docker compose up -d"
     static let startCommand = "docker compose up -d"
-    static let stopCommand = "docker compose down"
+    static let stopCommand = "docker compose stop"
 
     func run(_ project: UpdateProject) {
         launch(

@@ -178,135 +178,93 @@ struct UpdateCenterView: View {
             Spacer()
 
             if let id = selectedProjectID, let state, !state.output.isEmpty {
-                Button {
-                    copyLogs(state.output)
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "doc.on.doc")
-                        Text("Copier les logs")
-                    }
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(Color.white.opacity(0.08))
-                    .clipShape(Capsule())
-                }
-                .buttonStyle(.plain)
-                .help("Copier tout l'historique du terminal")
+                iconButton(
+                    systemName: "doc.on.doc",
+                    tint: Color.white.opacity(0.08),
+                    isRunning: false,
+                    disabled: false,
+                    help: "Copier tout l'historique du terminal",
+                    action: { copyLogs(state.output) }
+                )
 
-                Button {
-                    updateRunner.clearOutput(for: id)
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "trash")
-                        Text("Effacer")
-                    }
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(Color.white.opacity(0.08))
-                    .clipShape(Capsule())
-                }
-                .buttonStyle(.plain)
-                .help("Effacer le terminal")
+                iconButton(
+                    systemName: "trash",
+                    tint: Color.white.opacity(0.08),
+                    isRunning: false,
+                    disabled: false,
+                    help: "Effacer le terminal",
+                    action: { updateRunner.clearOutput(for: id) }
+                )
             }
 
             if let project = selectedProject, let state {
-                Button {
-                    updateRunner.runStart(project)
-                } label: {
-                    HStack(spacing: 6) {
-                        if state.isRunning {
-                            ProgressView()
-                                .controlSize(.small)
-                        } else {
-                            Image(systemName: "play.fill")
-                        }
-                        Text(state.isRunning ? "En cours…" : "Start")
-                    }
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 8)
-                    .background(Color.green.opacity(0.25))
-                    .clipShape(Capsule())
-                }
-                .buttonStyle(.plain)
-                .disabled(state.isRunning)
-                .help(UpdateRunner.startCommand)
+                iconButton(
+                    systemName: "play.fill",
+                    tint: Color.green.opacity(0.25),
+                    isRunning: state.isRunning,
+                    disabled: state.isRunning,
+                    help: UpdateRunner.startCommand,
+                    action: { updateRunner.runStart(project) }
+                )
 
-                Button {
-                    updateRunner.runStop(project)
-                } label: {
-                    HStack(spacing: 6) {
-                        if state.isRunning {
-                            ProgressView()
-                                .controlSize(.small)
-                        } else {
-                            Image(systemName: "stop.fill")
-                        }
-                        Text(state.isRunning ? "En cours…" : "Stop")
-                    }
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 8)
-                    .background(Color.red.opacity(0.25))
-                    .clipShape(Capsule())
-                }
-                .buttonStyle(.plain)
-                .disabled(state.isRunning)
-                .help(UpdateRunner.stopCommand)
+                iconButton(
+                    systemName: "stop.fill",
+                    tint: Color.red.opacity(0.25),
+                    isRunning: state.isRunning,
+                    disabled: state.isRunning,
+                    help: UpdateRunner.stopCommand,
+                    action: { updateRunner.runStop(project) }
+                )
 
-                Button {
-                    updateRunner.runBuild(project)
-                } label: {
-                    HStack(spacing: 6) {
-                        if state.isRunning {
-                            ProgressView()
-                                .controlSize(.small)
-                        } else {
-                            Image(systemName: "hammer")
-                        }
-                        Text(state.isRunning ? "En cours…" : "Build")
-                    }
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 8)
-                    .background(Color.purple.opacity(0.25))
-                    .clipShape(Capsule())
-                }
-                .buttonStyle(.plain)
-                .disabled(state.isRunning)
-                .help("docker compose down && docker compose build --no-cache && docker compose up -d")
+                iconButton(
+                    systemName: "hammer",
+                    tint: Color.purple.opacity(0.25),
+                    isRunning: state.isRunning,
+                    disabled: state.isRunning,
+                    help: UpdateRunner.buildCommand,
+                    action: { updateRunner.runBuild(project) }
+                )
 
-                Button {
-                    updateRunner.run(project)
-                } label: {
-                    HStack(spacing: 6) {
-                        if state.isRunning {
-                            ProgressView()
-                                .controlSize(.small)
-                        } else {
-                            Image(systemName: "arrow.triangle.2.circlepath")
-                        }
-                        Text(state.isRunning ? "En cours…" : "Update")
-                    }
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 8)
-                    .background(Color.blue.opacity(0.25))
-                    .clipShape(Capsule())
-                }
-                .buttonStyle(.plain)
-                .disabled(state.isRunning)
+                iconButton(
+                    systemName: "arrow.triangle.2.circlepath",
+                    tint: Color.blue.opacity(0.25),
+                    isRunning: state.isRunning,
+                    disabled: state.isRunning,
+                    help: "Update",
+                    action: { updateRunner.run(project) }
+                )
             }
         }
         .padding(16)
+    }
+
+    private func iconButton(
+        systemName: String,
+        tint: Color,
+        isRunning: Bool,
+        disabled: Bool,
+        help: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            ZStack {
+                if isRunning {
+                    ProgressView()
+                        .controlSize(.small)
+                } else {
+                    Image(systemName: systemName)
+                        .font(.system(size: 20, weight: .semibold))
+                }
+            }
+            .foregroundStyle(.white)
+            .frame(width: 22, height: 22)
+            .padding(11)
+            .background(tint)
+            .clipShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .disabled(disabled)
+        .help(help)
     }
 
     private func copyLogs(_ text: String) {
