@@ -6,6 +6,7 @@ struct MonitoredURLStatus: Identifiable {
     var lastCheck: Date?
     var detail: String?
     var title: String?
+    var downSince: Date?
 }
 
 @MainActor
@@ -54,21 +55,25 @@ final class URLMonitor: ObservableObject {
             let (data, response) = try await URLSession.shared.data(for: request)
             let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
             let isServerError = statusCode >= 500
+            let previous = statuses[urlString]
 
             statuses[urlString] = MonitoredURLStatus(
                 id: urlString,
                 isDown: isServerError,
                 lastCheck: Date(),
                 detail: isServerError ? "HTTP \(statusCode)" : nil,
-                title: Self.extractTitle(from: data) ?? statuses[urlString]?.title
+                title: Self.extractTitle(from: data) ?? previous?.title,
+                downSince: isServerError ? (previous?.isDown == true ? previous?.downSince : Date()) : nil
             )
         } catch {
+            let previous = statuses[urlString]
             statuses[urlString] = MonitoredURLStatus(
                 id: urlString,
                 isDown: true,
                 lastCheck: Date(),
                 detail: error.localizedDescription,
-                title: statuses[urlString]?.title
+                title: previous?.title,
+                downSince: previous?.isDown == true ? previous?.downSince : Date()
             )
         }
     }

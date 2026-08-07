@@ -241,9 +241,15 @@ struct DashboardView: View {
 
     private var updateCenterButton: some View {
         Button {
-            updateProjects = UpdateScriptScanner.scan(root: Self.workspaceRoot)
-            dockerStatusMonitor.start(projects: updateProjects)
             showingUpdateCenter = true
+            let root = Self.workspaceRoot
+            Task {
+                let projects = await Task.detached(priority: .userInitiated) {
+                    UpdateScriptScanner.scan(root: root)
+                }.value
+                updateProjects = projects
+                dockerStatusMonitor.start(projects: projects)
+            }
         } label: {
             Image(systemName: "terminal.fill")
                 .font(.system(size: 15, weight: .semibold))
@@ -500,7 +506,8 @@ private struct URLStatusRow: View {
 
                     Circle()
                         .fill(dotColor)
-                        .frame(width: 10, height: 10)
+                        .frame(width: 8, height: 8)
+                        .help(downSinceHelpText(now: context.date))
                 }
 
                 if status?.title != nil {
@@ -542,6 +549,25 @@ private struct URLStatusRow: View {
         if minutes < 60 { return "il y a \(minutes) min" }
         let hours = minutes / 60
         return "il y a \(hours) h"
+    }
+
+    private func downSinceHelpText(now: Date) -> String {
+        guard status?.isDown == true else { return "En ligne" }
+        guard let downSince = status?.downSince else { return "Hors ligne" }
+        return "Hors ligne depuis \(Self.durationText(since: downSince, now: now))"
+    }
+
+    private static func durationText(since date: Date, now: Date) -> String {
+        let seconds = Int(now.timeIntervalSince(date))
+        if seconds < 60 { return "\(seconds) s" }
+        let minutes = seconds / 60
+        if minutes < 60 { return "\(minutes) min" }
+        let hours = minutes / 60
+        if hours < 24 { return "\(hours) h" }
+        let days = hours / 24
+        let remainingHours = hours % 24
+        if remainingHours == 0 { return "\(days) j" }
+        return "\(days) j \(remainingHours) h"
     }
 }
 
