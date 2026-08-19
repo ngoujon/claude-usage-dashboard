@@ -5,10 +5,7 @@ import Combine
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private let usageService = UsageService()
-    private let gitWatcher = GitWatcher()
     private let urlMonitor = URLMonitor()
-    private let updateRunner = UpdateRunner()
-    private let dockerStatusMonitor = DockerStatusMonitor()
     private var dashboardWindowController: DashboardWindowController?
     private var urlMonitorWindowController: URLMonitorWindowController?
     private var cancellables = Set<AnyCancellable>()
@@ -23,14 +20,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             .store(in: &cancellables)
 
-        updateRunner.onJobFinished = { [weak gitWatcher, weak dockerStatusMonitor] projectID, exitCode in
-            dockerStatusMonitor?.checkNow()
-            guard exitCode == 0 else { return }
-            gitWatcher?.markDeployed(projectID)
-        }
-
         usageService.start()
-        gitWatcher.start()
         urlMonitor.start()
 
         showDashboard()
@@ -63,10 +53,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if dashboardWindowController == nil {
             dashboardWindowController = DashboardWindowController(
                 usageService: usageService,
-                gitWatcher: gitWatcher,
-                urlMonitor: urlMonitor,
-                updateRunner: updateRunner,
-                dockerStatusMonitor: dockerStatusMonitor
+                urlMonitor: urlMonitor
             )
         }
         NSApp.activate(ignoringOtherApps: true)
@@ -78,8 +65,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         Task {
             async let usage: Void = usageService.refresh()
             async let urls: Void = urlMonitor.checkAll()
-            async let git: Void = gitWatcher.check()
-            _ = await (usage, urls, git)
+            _ = await (usage, urls)
         }
     }
 

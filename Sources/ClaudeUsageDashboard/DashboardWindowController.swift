@@ -9,7 +9,7 @@ final class DashboardWindowController: NSWindowController, NSWindowDelegate {
     private let usageService: UsageService
     private let displaySleepBlocker = DisplaySleepBlocker()
 
-    init(usageService: UsageService, gitWatcher: GitWatcher, urlMonitor: URLMonitor, updateRunner: UpdateRunner, dockerStatusMonitor: DockerStatusMonitor) {
+    init(usageService: UsageService, urlMonitor: URLMonitor) {
         self.usageService = usageService
 
         let window = NSWindow(
@@ -28,10 +28,7 @@ final class DashboardWindowController: NSWindowController, NSWindowDelegate {
         window.isReleasedWhenClosed = false
         window.contentView = NSHostingView(rootView: DashboardView(
             usageService: usageService,
-            gitWatcher: gitWatcher,
-            urlMonitor: urlMonitor,
-            updateRunner: updateRunner,
-            dockerStatusMonitor: dockerStatusMonitor
+            urlMonitor: urlMonitor
         ))
         window.delegate = self
     }

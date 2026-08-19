@@ -2,45 +2,22 @@ import SwiftUI
 
 struct DashboardView: View {
     @ObservedObject var usageService: UsageService
-    @ObservedObject var gitWatcher: GitWatcher
     @ObservedObject var urlMonitor: URLMonitor
-    @ObservedObject var updateRunner: UpdateRunner
-    @ObservedObject var dockerStatusMonitor: DockerStatusMonitor
     @State private var showingSetup = false
     @State private var isRefreshing = false
-    @State private var showingGitSidebar = true
     @State private var showingURLSidebar = true
-    @State private var showingUpdateCenter = false
-    @State private var updateProjects: [UpdateProject] = []
-
-    private static let workspaceRoot = URL(fileURLWithPath: "~/Developer")
 
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
-            if showingUpdateCenter {
-                UpdateCenterView(
-                    updateRunner: updateRunner,
-                    gitWatcher: gitWatcher,
-                    dockerStatusMonitor: dockerStatusMonitor,
-                    projects: updateProjects,
-                    onBack: { showingUpdateCenter = false }
-                )
-            } else {
-                HStack(spacing: 0) {
-                    if showingGitSidebar && !gitWatcher.dirtyRepos.isEmpty {
-                        gitSidebar
-                            .transition(.move(edge: .leading))
-                    }
-                    content
-                    if showingURLSidebar && !urlMonitor.urls.isEmpty {
-                        urlSidebar
-                            .transition(.move(edge: .trailing))
-                    }
+            HStack(spacing: 0) {
+                content
+                if showingURLSidebar && !urlMonitor.urls.isEmpty {
+                    urlSidebar
+                        .transition(.move(edge: .trailing))
                 }
             }
         }
-        .animation(.easeInOut(duration: 0.2), value: showingGitSidebar)
         .animation(.easeInOut(duration: 0.2), value: showingURLSidebar)
         .onReceive(NotificationCenter.default.publisher(for: .showSetupSheet)) { _ in
             showingSetup = true
@@ -53,69 +30,6 @@ struct DashboardView: View {
         .sheet(isPresented: $showingSetup) {
             SetupSheetView(usageService: usageService, isPresented: $showingSetup)
         }
-    }
-
-    private var gitSidebar: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 8) {
-                Image(systemName: "exclamationmark.triangle.fill")
-                    .font(.system(size: 14))
-                    .foregroundStyle(.orange)
-                Text("Non commités")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(.white)
-                Spacer()
-                Text("\(gitWatcher.dirtyRepos.count)")
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 2)
-                    .background(Color.orange)
-                    .clipShape(Capsule())
-            }
-            .padding(.horizontal, 16)
-            .padding(.top, 16)
-
-            HStack(spacing: 12) {
-                HStack(spacing: 5) {
-                    Circle().fill(Color.red).frame(width: 6, height: 6)
-                    Text("à commit").font(.system(size: 11)).foregroundStyle(.white.opacity(0.5))
-                }
-                HStack(spacing: 5) {
-                    Circle().fill(Color.orange).frame(width: 6, height: 6)
-                    Text("à push").font(.system(size: 11)).foregroundStyle(.white.opacity(0.5))
-                }
-            }
-            .padding(.horizontal, 16)
-            .padding(.top, 6)
-            .padding(.bottom, 14)
-
-            Divider().background(Color.white.opacity(0.1))
-
-            ScrollView {
-                VStack(alignment: .leading, spacing: 2) {
-                    ForEach(gitWatcher.dirtyRepos) { repo in
-                        GitRepoRow(
-                            repo: repo,
-                            isPushing: gitWatcher.pushingRepoIDs.contains(repo.id),
-                            pushResult: gitWatcher.lastPushResults[repo.id]
-                        ) {
-                            gitWatcher.push(repo)
-                        }
-                    }
-                }
-                .padding(.vertical, 4)
-            }
-        }
-        .frame(width: 220)
-        .frame(maxHeight: .infinity)
-        .background(Color.white.opacity(0.04))
-        .overlay(
-            Rectangle()
-                .frame(width: 1)
-                .foregroundStyle(Color.white.opacity(0.08)),
-            alignment: .trailing
-        )
     }
 
     private var urlSidebar: some View {
@@ -204,12 +118,6 @@ struct DashboardView: View {
 
             Spacer()
 
-            if !gitWatcher.dirtyRepos.isEmpty {
-                gitSidebarToggle
-            }
-
-            updateCenterButton
-
             if !urlMonitor.urls.isEmpty {
                 urlSidebarToggle
             }
@@ -217,50 +125,6 @@ struct DashboardView: View {
             refreshButton
         }
         .padding(.horizontal, 20)
-    }
-
-    private var gitSidebarToggle: some View {
-        Button {
-            showingGitSidebar.toggle()
-        } label: {
-            HStack(spacing: 6) {
-                Image(systemName: "arrow.triangle.branch")
-                Text("\(gitWatcher.dirtyRepos.count)")
-                    .font(.system(size: 13, weight: .bold))
-            }
-            .font(.system(size: 15, weight: .semibold))
-            .foregroundStyle(.white)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(Color.orange.opacity(0.2))
-            .clipShape(Capsule())
-        }
-        .buttonStyle(.plain)
-        .help(showingGitSidebar ? "Masquer les projets non commités" : "Afficher les projets non commités")
-    }
-
-    private var updateCenterButton: some View {
-        Button {
-            showingUpdateCenter = true
-            let root = Self.workspaceRoot
-            Task {
-                let projects = await Task.detached(priority: .userInitiated) {
-                    UpdateScriptScanner.scan(root: root)
-                }.value
-                updateProjects = projects
-                dockerStatusMonitor.start(projects: projects)
-            }
-        } label: {
-            Image(systemName: "terminal.fill")
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(.white)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(Color.white.opacity(0.08))
-                .clipShape(Capsule())
-        }
-        .buttonStyle(.plain)
-        .help("Scripts de mise à jour")
     }
 
     private var urlSidebarToggle: some View {
@@ -291,8 +155,7 @@ struct DashboardView: View {
         Task {
             async let usage: Void = usageService.refresh()
             async let urls: Void = urlMonitor.checkAll()
-            async let git: Void = gitWatcher.check()
-            _ = await (usage, urls, git)
+            _ = await (usage, urls)
             isRefreshing = false
         }
     }
@@ -568,67 +431,5 @@ private struct URLStatusRow: View {
         let remainingHours = hours % 24
         if remainingHours == 0 { return "\(days) j" }
         return "\(days) j \(remainingHours) h"
-    }
-}
-
-private struct GitRepoRow: View {
-    let repo: DirtyRepo
-    let isPushing: Bool
-    let pushResult: PushResult?
-    let onPush: () -> Void
-
-    private var isPushable: Bool {
-        !repo.hasUncommittedChanges && repo.hasUnpushedCommits
-    }
-
-    private var helpText: String {
-        if isPushing { return "Push en cours…" }
-        if case .failure(let message) = pushResult { return message }
-        if isPushable { return "Cliquer pour pousser vers GitHub" }
-        return "Modifications non commitées — rien à pousser"
-    }
-
-    var body: some View {
-        Button(action: onPush) {
-            HStack(spacing: 10) {
-                ZStack {
-                    if isPushing {
-                        ProgressView()
-                            .controlSize(.mini)
-                    } else {
-                        Circle()
-                            .fill(repo.hasUncommittedChanges ? Color.red : Color.orange)
-                            .frame(width: 7, height: 7)
-                    }
-                }
-                .frame(width: 10, height: 10)
-
-                Text(repo.id)
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(.white)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-
-                Spacer()
-
-                if !isPushing {
-                    if case .failure = pushResult {
-                        Image(systemName: "exclamationmark.circle.fill")
-                            .font(.system(size: 13))
-                            .foregroundStyle(.red)
-                    } else if isPushable {
-                        Image(systemName: "arrow.up.circle")
-                            .font(.system(size: 13))
-                            .foregroundStyle(.white.opacity(0.35))
-                    }
-                }
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .disabled(!isPushable || isPushing)
-        .help(helpText)
     }
 }
