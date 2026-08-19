@@ -90,15 +90,18 @@ struct DashboardView: View {
                 header
 
                 if hasData {
-                    VStack(spacing: 10) {
-                        if let session = usageService.snapshot.session {
-                            KPIRow(title: "Session (5h)", limit: session)
-                        }
-                        if let weekly = usageService.snapshot.weekly {
-                            KPIRow(title: "Hebdo (tous modèles)", limit: weekly)
-                        }
-                        if let fable = usageService.snapshot.fable {
-                            KPIRow(title: "Fable (hebdo)", limit: fable)
+                    VStack(spacing: 6) {
+                        KPIHeaderRow()
+                        VStack(spacing: 10) {
+                            if let session = usageService.snapshot.session {
+                                KPIRow(title: "Session (5h)", limit: session)
+                            }
+                            if let weekly = usageService.snapshot.weekly {
+                                KPIRow(title: "Hebdo (tous modèles)", limit: weekly)
+                            }
+                            if let fable = usageService.snapshot.fable {
+                                KPIRow(title: "Fable (hebdo)", limit: fable)
+                            }
                         }
                     }
                     .padding(.horizontal, 16)
@@ -205,6 +208,31 @@ struct DashboardView: View {
     }
 }
 
+private enum KPIColumn {
+    static let title: CGFloat = 150
+    static let usage: CGFloat = 68 + 8 + 260
+    static let rhythm: CGFloat = 170
+    static let reset: CGFloat = 130
+    static let projection: CGFloat = 80
+}
+
+private struct KPIHeaderRow: View {
+    var body: some View {
+        HStack(spacing: 16) {
+            Text("").frame(width: KPIColumn.title, alignment: .leading)
+            Text("Utilisation").frame(width: KPIColumn.usage, alignment: .leading)
+            Text("Rythme").frame(width: KPIColumn.rhythm, alignment: .leading)
+            Text("Reset").frame(width: KPIColumn.reset, alignment: .leading)
+            Text("Projection").frame(width: KPIColumn.projection, alignment: .leading)
+            Spacer(minLength: 0)
+        }
+        .font(.system(size: 12, weight: .semibold))
+        .foregroundStyle(.white.opacity(0.4))
+        .textCase(.uppercase)
+        .padding(.horizontal, 16 + 16)
+    }
+}
+
 private struct KPIRow: View {
     let title: String
     let limit: LimitDisplay
@@ -235,32 +263,36 @@ private struct KPIRow: View {
 
     private let progressBarWidth: CGFloat = 260
 
+    private var projectionText: String {
+        guard let pace = limit.pace else { return "—" }
+        return pace.projectedPercent < 999 ? "\(Int(pace.projectedPercent.rounded()))%" : ">999%"
+    }
+
     var body: some View {
         HStack(spacing: 16) {
-            VStack(alignment: .leading, spacing: 6) {
-                Text(title)
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(.gray)
-                    .lineLimit(1)
+            Text(title)
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(.gray)
+                .lineLimit(1)
+                .frame(width: KPIColumn.title, alignment: .leading)
 
-                HStack(spacing: 8) {
-                    Text(limit.formattedPercent)
-                        .font(.system(size: 26, weight: .bold, design: .rounded))
-                        .foregroundStyle(.white)
-                        .frame(width: 68, alignment: .leading)
+            HStack(spacing: 8) {
+                Text(limit.formattedPercent)
+                    .font(.system(size: 26, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+                    .frame(width: 68, alignment: .leading)
 
-                    ZStack(alignment: .leading) {
-                        Capsule()
-                            .fill(Color.white.opacity(0.1))
-                            .frame(width: progressBarWidth)
-                        Capsule()
-                            .fill(color)
-                            .frame(width: progressBarWidth * min(limit.percent / 100, 1))
-                    }
-                    .frame(width: progressBarWidth, height: 8)
+                ZStack(alignment: .leading) {
+                    Capsule()
+                        .fill(Color.white.opacity(0.1))
+                        .frame(width: progressBarWidth)
+                    Capsule()
+                        .fill(color)
+                        .frame(width: progressBarWidth * min(limit.percent / 100, 1))
                 }
+                .frame(width: progressBarWidth, height: 8)
             }
-            .frame(width: 68 + 8 + progressBarWidth, alignment: .leading)
+            .frame(width: KPIColumn.usage, alignment: .leading)
 
             HStack(spacing: 5) {
                 Image(systemName: rhythmIcon)
@@ -274,23 +306,28 @@ private struct KPIRow: View {
             .clipShape(Capsule())
             .lineLimit(1)
             .fixedSize(horizontal: true, vertical: false)
+            .frame(width: KPIColumn.rhythm, alignment: .leading)
 
-            Divider().background(Color.white.opacity(0.1)).frame(height: 40)
-
-            VStack(alignment: .leading, spacing: 2) {
-                TimelineView(.periodic(from: .now, by: 1)) { context in
+            TimelineView(.periodic(from: .now, by: 1)) { context in
+                VStack(alignment: .leading, spacing: 2) {
                     Text(PaceCalculator.formatCountdown(limit.resetsAt, now: context.date))
                         .font(.system(size: 20, weight: .bold, design: .monospaced))
                         .monospacedDigit()
                         .foregroundStyle(.white)
                         .lineLimit(1)
+                    Text(PaceCalculator.formatAbsoluteReset(limit.resetsAt))
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.6))
+                        .lineLimit(1)
                 }
-                Text(PaceCalculator.formatAbsoluteReset(limit.resetsAt))
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.6))
-                    .lineLimit(1)
             }
-            .frame(minWidth: 130, alignment: .leading)
+            .frame(width: KPIColumn.reset, alignment: .leading)
+
+            Text(projectionText)
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(.white)
+                .lineLimit(1)
+                .frame(width: KPIColumn.projection, alignment: .leading)
 
             Spacer(minLength: 0)
         }
