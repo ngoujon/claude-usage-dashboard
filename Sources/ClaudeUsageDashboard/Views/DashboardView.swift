@@ -90,15 +90,15 @@ struct DashboardView: View {
                 header
 
                 if hasData {
-                    HStack(spacing: 14) {
+                    VStack(spacing: 10) {
                         if let session = usageService.snapshot.session {
-                            KPICard(title: "Session (5h)", limit: session)
+                            KPIRow(title: "Session (5h)", limit: session)
                         }
                         if let weekly = usageService.snapshot.weekly {
-                            KPICard(title: "Hebdo (tous modèles)", limit: weekly)
+                            KPIRow(title: "Hebdo (tous modèles)", limit: weekly)
                         }
                         if let fable = usageService.snapshot.fable {
-                            KPICard(title: "Fable (hebdo)", limit: fable)
+                            KPIRow(title: "Fable (hebdo)", limit: fable)
                         }
                     }
                     .padding(.horizontal, 16)
@@ -205,7 +205,7 @@ struct DashboardView: View {
     }
 }
 
-private struct KPICard: View {
+private struct KPIRow: View {
     let title: String
     let limit: LimitDisplay
 
@@ -250,97 +250,100 @@ private struct KPICard: View {
     }
 
     var body: some View {
-        VStack(spacing: 10) {
-            HStack(spacing: 8) {
+        HStack(spacing: 16) {
+            VStack(alignment: .leading, spacing: 6) {
                 Text(title)
-                    .font(.system(size: 19, weight: .semibold))
+                    .font(.system(size: 17, weight: .semibold))
                     .foregroundStyle(.gray)
                     .lineLimit(1)
-                    .minimumScaleFactor(0.6)
 
-                Spacer(minLength: 8)
+                HStack(spacing: 8) {
+                    Text(limit.formattedPercent)
+                        .font(.system(size: 26, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white)
+                        .frame(width: 68, alignment: .leading)
 
-                HStack(spacing: 5) {
-                    Image(systemName: rhythmIcon)
-                    Text(rhythmText)
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            Capsule()
+                                .fill(Color.white.opacity(0.1))
+                            Capsule()
+                                .fill(color)
+                                .frame(width: geo.size.width * min(limit.percent / 100, 1))
+                        }
+                    }
+                    .frame(height: 8)
                 }
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(color)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 5)
-                .background(color.opacity(0.15))
-                .clipShape(Capsule())
-                .lineLimit(1)
-                .fixedSize(horizontal: true, vertical: false)
             }
+            .frame(minWidth: 190, alignment: .leading)
 
-            ZStack {
-                Circle()
-                    .stroke(Color.white.opacity(0.1), lineWidth: 12)
-                Circle()
-                    .trim(from: 0, to: min(limit.percent / 100, 1))
-                    .stroke(color, style: StrokeStyle(lineWidth: 12, lineCap: .round))
-                    .rotationEffect(.degrees(-90))
-                Text(limit.formattedPercent)
-                    .font(.system(size: 39, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white)
+            HStack(spacing: 5) {
+                Image(systemName: rhythmIcon)
+                Text(rhythmText)
             }
-            .frame(width: 136, height: 136)
+            .font(.system(size: 14, weight: .semibold))
+            .foregroundStyle(color)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(color.opacity(0.15))
+            .clipShape(Capsule())
+            .lineLimit(1)
+            .fixedSize(horizontal: true, vertical: false)
 
-            VStack(spacing: 4) {
+            Divider().background(Color.white.opacity(0.1)).frame(height: 40)
+
+            VStack(alignment: .leading, spacing: 2) {
                 TimelineView(.periodic(from: .now, by: 1)) { context in
                     Text(PaceCalculator.formatCountdown(limit.resetsAt, now: context.date))
-                        .font(.system(size: 37, weight: .bold, design: .monospaced))
+                        .font(.system(size: 20, weight: .bold, design: .monospaced))
                         .monospacedDigit()
                         .foregroundStyle(.white)
                         .lineLimit(1)
-                        .minimumScaleFactor(0.5)
                 }
-
                 Text(PaceCalculator.formatAbsoluteReset(limit.resetsAt))
-                    .font(.system(size: 18, weight: .medium))
+                    .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(.white.opacity(0.6))
-                    .multilineTextAlignment(.center)
-                    .lineLimit(2)
-                    .minimumScaleFactor(0.7)
+                    .lineLimit(1)
+            }
+            .frame(minWidth: 130, alignment: .leading)
+
+            Divider().background(Color.white.opacity(0.1)).frame(height: 40)
+
+            HStack(spacing: 14) {
+                PaceDetailStat(icon: "chart.line.uptrend.xyaxis", label: "Projection", value: projectionText)
+                PaceDetailStat(icon: "bolt.fill", label: "Budget", value: budgetText)
+                PaceDetailStat(icon: "pause.circle.fill", label: "Pause", value: pauseText)
             }
 
-            Divider()
-                .background(Color.white.opacity(0.1))
-
-            VStack(spacing: 8) {
-                PaceDetailRow(icon: "chart.line.uptrend.xyaxis", label: "Projection à l'échéance", value: projectionText)
-                PaceDetailRow(icon: "bolt.fill", label: "Budget restant", value: budgetText)
-                PaceDetailRow(icon: "pause.circle.fill", label: "Pause pour revenir dans le rythme", value: pauseText)
-            }
+            Spacer(minLength: 0)
         }
-        .padding(14)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
         .frame(maxWidth: .infinity)
         .background(Color.white.opacity(0.05))
-        .clipShape(RoundedRectangle(cornerRadius: 18))
+        .clipShape(RoundedRectangle(cornerRadius: 14))
     }
 }
 
-private struct PaceDetailRow: View {
+private struct PaceDetailStat: View {
     let icon: String
     let label: String
     let value: String
 
     var body: some View {
-        HStack(spacing: 8) {
-            Image(systemName: icon)
-                .font(.system(size: 19))
-                .foregroundStyle(.white.opacity(0.4))
-                .frame(width: 18)
-            Text(label)
-                .font(.system(size: 18))
-                .foregroundStyle(.white.opacity(0.7))
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
-            Spacer()
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 4) {
+                Image(systemName: icon)
+                    .font(.system(size: 12))
+                    .foregroundStyle(.white.opacity(0.4))
+                Text(label)
+                    .font(.system(size: 12))
+                    .foregroundStyle(.white.opacity(0.6))
+            }
             Text(value)
-                .font(.system(size: 20, weight: .semibold))
+                .font(.system(size: 16, weight: .semibold))
                 .foregroundStyle(.white)
+                .lineLimit(1)
         }
     }
 }
