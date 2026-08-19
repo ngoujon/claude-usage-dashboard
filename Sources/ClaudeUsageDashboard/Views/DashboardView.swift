@@ -298,7 +298,7 @@ private struct KPICard: View {
                 }
 
                 Text(PaceCalculator.formatAbsoluteReset(limit.resetsAt))
-                    .font(.system(size: 15, weight: .medium))
+                    .font(.system(size: 18, weight: .medium))
                     .foregroundStyle(.white.opacity(0.6))
                     .multilineTextAlignment(.center)
                     .lineLimit(2)
@@ -329,17 +329,17 @@ private struct PaceDetailRow: View {
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: icon)
-                .font(.system(size: 17))
+                .font(.system(size: 19))
                 .foregroundStyle(.white.opacity(0.4))
-                .frame(width: 16)
+                .frame(width: 18)
             Text(label)
-                .font(.system(size: 16))
+                .font(.system(size: 18))
                 .foregroundStyle(.white.opacity(0.7))
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
             Spacer()
             Text(value)
-                .font(.system(size: 18, weight: .semibold))
+                .font(.system(size: 20, weight: .semibold))
                 .foregroundStyle(.white)
         }
     }
