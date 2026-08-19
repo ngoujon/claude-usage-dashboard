@@ -233,21 +233,7 @@ private struct KPIRow: View {
         return "arrow.right.circle.fill"
     }
 
-    private var projectionText: String {
-        guard let pace = limit.pace else { return "—" }
-        return pace.projectedPercent < 999 ? "\(Int(pace.projectedPercent.rounded()))%" : ">999%"
-    }
-
-    private var budgetText: String {
-        guard let pace = limit.pace else { return "—" }
-        return String(format: "%.1f%%/h", pace.hourlyBudget)
-    }
-
-    /// Only meaningful while the projection is ahead of pace (>= 101%); "N/A" otherwise.
-    private var pauseText: String {
-        guard let pace = limit.pace, pace.projectedPercent >= PaceCalculator.aheadProjectionThreshold else { return "N/A" }
-        return PaceCalculator.formatDuration(pace.pauseNeeded)
-    }
+    private let progressBarWidth: CGFloat = 260
 
     var body: some View {
         HStack(spacing: 16) {
@@ -263,19 +249,18 @@ private struct KPIRow: View {
                         .foregroundStyle(.white)
                         .frame(width: 68, alignment: .leading)
 
-                    GeometryReader { geo in
-                        ZStack(alignment: .leading) {
-                            Capsule()
-                                .fill(Color.white.opacity(0.1))
-                            Capsule()
-                                .fill(color)
-                                .frame(width: geo.size.width * min(limit.percent / 100, 1))
-                        }
+                    ZStack(alignment: .leading) {
+                        Capsule()
+                            .fill(Color.white.opacity(0.1))
+                            .frame(width: progressBarWidth)
+                        Capsule()
+                            .fill(color)
+                            .frame(width: progressBarWidth * min(limit.percent / 100, 1))
                     }
-                    .frame(height: 8)
+                    .frame(width: progressBarWidth, height: 8)
                 }
             }
-            .frame(minWidth: 190, alignment: .leading)
+            .frame(width: 68 + 8 + progressBarWidth, alignment: .leading)
 
             HStack(spacing: 5) {
                 Image(systemName: rhythmIcon)
@@ -307,14 +292,6 @@ private struct KPIRow: View {
             }
             .frame(minWidth: 130, alignment: .leading)
 
-            Divider().background(Color.white.opacity(0.1)).frame(height: 40)
-
-            HStack(spacing: 14) {
-                PaceDetailStat(icon: "chart.line.uptrend.xyaxis", label: "Projection", value: projectionText)
-                PaceDetailStat(icon: "bolt.fill", label: "Budget", value: budgetText)
-                PaceDetailStat(icon: "pause.circle.fill", label: "Pause", value: pauseText)
-            }
-
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 16)
@@ -322,29 +299,6 @@ private struct KPIRow: View {
         .frame(maxWidth: .infinity)
         .background(Color.white.opacity(0.05))
         .clipShape(RoundedRectangle(cornerRadius: 14))
-    }
-}
-
-private struct PaceDetailStat: View {
-    let icon: String
-    let label: String
-    let value: String
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            HStack(spacing: 4) {
-                Image(systemName: icon)
-                    .font(.system(size: 12))
-                    .foregroundStyle(.white.opacity(0.4))
-                Text(label)
-                    .font(.system(size: 12))
-                    .foregroundStyle(.white.opacity(0.6))
-            }
-            Text(value)
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(.white)
-                .lineLimit(1)
-        }
     }
 }
 
