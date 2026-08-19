@@ -210,7 +210,7 @@ struct DashboardView: View {
 
 private enum KPIColumn {
     static let title: CGFloat = 150
-    static let usage: CGFloat = 68 + 8 + 260
+    static let usage: CGFloat = 68 + 8 + 150
     static let rhythm: CGFloat = 170
     static let reset: CGFloat = 200
     static let projection: CGFloat = 110
@@ -266,7 +266,7 @@ private struct KPIRow: View {
         return "arrow.right.circle.fill"
     }
 
-    private let progressBarWidth: CGFloat = 260
+    private let progressBarWidth: CGFloat = 150
 
     private var projectionText: String {
         guard let pace = limit.pace else { return "—" }
