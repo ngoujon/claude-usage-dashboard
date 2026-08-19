@@ -91,16 +91,16 @@ struct DashboardView: View {
 
                 if hasData {
                     VStack(spacing: 6) {
-                        KPIHeaderRow()
+                        KPIHeaderRow(showingResetAndProjection: !showingURLSidebar)
                         VStack(spacing: 10) {
                             if let session = usageService.snapshot.session {
-                                KPIRow(title: "Session (5h)", limit: session)
+                                KPIRow(title: "Session 5h", limit: session, showingResetAndProjection: !showingURLSidebar)
                             }
                             if let weekly = usageService.snapshot.weekly {
-                                KPIRow(title: "Hebdo (tous modèles)", limit: weekly)
+                                KPIRow(title: "Hebdo tous modèles", limit: weekly, showingResetAndProjection: !showingURLSidebar)
                             }
                             if let fable = usageService.snapshot.fable {
-                                KPIRow(title: "Fable (hebdo)", limit: fable)
+                                KPIRow(title: "Fable hebdo", limit: fable, showingResetAndProjection: !showingURLSidebar)
                             }
                         }
                     }
@@ -212,18 +212,22 @@ private enum KPIColumn {
     static let title: CGFloat = 150
     static let usage: CGFloat = 68 + 8 + 260
     static let rhythm: CGFloat = 170
-    static let reset: CGFloat = 130
-    static let projection: CGFloat = 80
+    static let reset: CGFloat = 200
+    static let projection: CGFloat = 110
 }
 
 private struct KPIHeaderRow: View {
+    let showingResetAndProjection: Bool
+
     var body: some View {
         HStack(spacing: 16) {
             Text("").frame(width: KPIColumn.title, alignment: .leading)
-            Text("Utilisation").frame(width: KPIColumn.usage, alignment: .leading)
-            Text("Rythme").frame(width: KPIColumn.rhythm, alignment: .leading)
-            Text("Reset").frame(width: KPIColumn.reset, alignment: .leading)
-            Text("Projection").frame(width: KPIColumn.projection, alignment: .leading)
+            Text("Utilisation").frame(width: KPIColumn.usage, alignment: .center)
+            Text("Rythme").frame(width: KPIColumn.rhythm, alignment: .center)
+            if showingResetAndProjection {
+                Text("Reset").frame(width: KPIColumn.reset, alignment: .center)
+                Text("Projection").frame(width: KPIColumn.projection, alignment: .center)
+            }
             Spacer(minLength: 0)
         }
         .font(.system(size: 12, weight: .semibold))
@@ -236,6 +240,7 @@ private struct KPIHeaderRow: View {
 private struct KPIRow: View {
     let title: String
     let limit: LimitDisplay
+    let showingResetAndProjection: Bool
 
     private var color: Color {
         guard let pace = limit.pace else { return .blue }
@@ -308,26 +313,28 @@ private struct KPIRow: View {
             .fixedSize(horizontal: true, vertical: false)
             .frame(width: KPIColumn.rhythm, alignment: .leading)
 
-            TimelineView(.periodic(from: .now, by: 1)) { context in
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(PaceCalculator.formatCountdown(limit.resetsAt, now: context.date))
-                        .font(.system(size: 20, weight: .bold, design: .monospaced))
-                        .monospacedDigit()
-                        .foregroundStyle(.white)
-                        .lineLimit(1)
-                    Text(PaceCalculator.formatAbsoluteReset(limit.resetsAt))
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.6))
-                        .lineLimit(1)
+            if showingResetAndProjection {
+                TimelineView(.periodic(from: .now, by: 1)) { context in
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(PaceCalculator.formatCountdown(limit.resetsAt, now: context.date))
+                            .font(.system(size: 20, weight: .bold, design: .monospaced))
+                            .monospacedDigit()
+                            .foregroundStyle(.white)
+                            .lineLimit(1)
+                        Text(PaceCalculator.formatAbsoluteReset(limit.resetsAt))
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(.white.opacity(0.6))
+                            .lineLimit(1)
+                    }
                 }
-            }
-            .frame(width: KPIColumn.reset, alignment: .leading)
+                .frame(width: KPIColumn.reset, alignment: .leading)
 
-            Text(projectionText)
-                .font(.system(size: 17, weight: .semibold))
-                .foregroundStyle(.white)
-                .lineLimit(1)
-                .frame(width: KPIColumn.projection, alignment: .leading)
+                Text(projectionText)
+                    .font(.system(size: 24, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .frame(width: KPIColumn.projection, alignment: .leading)
+            }
 
             Spacer(minLength: 0)
         }
