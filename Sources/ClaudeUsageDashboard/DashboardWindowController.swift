@@ -13,7 +13,7 @@ final class DashboardWindowController: NSWindowController, NSWindowDelegate {
         self.usageService = usageService
 
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 960, height: 640),
+            contentRect: NSRect(x: 0, y: 0, width: 960, height: 540),
             styleMask: [.titled, .closable, .miniaturizable, .resizable],
             backing: .buffered,
             defer: false
@@ -22,6 +22,7 @@ final class DashboardWindowController: NSWindowController, NSWindowDelegate {
         super.init(window: window)
 
         window.title = "Claude — Suivi de session"
+        window.contentMinSize = NSSize(width: 760, height: 460)
         window.center()
         window.collectionBehavior = [.fullScreenPrimary]
         window.isReleasedWhenClosed = false

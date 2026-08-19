@@ -172,7 +172,7 @@ struct DashboardView: View {
             || usageService.snapshot.fable != nil
 
         ScrollView {
-            VStack(spacing: 20) {
+            VStack(spacing: 12) {
                 header
 
                 if hasData {
@@ -192,8 +192,8 @@ struct DashboardView: View {
                     emptyState
                 }
             }
-            .padding(.top, 8)
-            .padding(.bottom, 24)
+            .padding(.top, 6)
+            .padding(.bottom, 16)
         }
     }
 
@@ -387,10 +387,10 @@ private struct KPICard: View {
     }
 
     var body: some View {
-        VStack(spacing: 14) {
+        VStack(spacing: 10) {
             HStack(spacing: 8) {
                 Text(title)
-                    .font(.system(size: 20, weight: .semibold))
+                    .font(.system(size: 17, weight: .semibold))
                     .foregroundStyle(.gray)
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
@@ -413,21 +413,21 @@ private struct KPICard: View {
 
             ZStack {
                 Circle()
-                    .stroke(Color.white.opacity(0.1), lineWidth: 14)
+                    .stroke(Color.white.opacity(0.1), lineWidth: 12)
                 Circle()
                     .trim(from: 0, to: min(limit.percent / 100, 1))
-                    .stroke(color, style: StrokeStyle(lineWidth: 14, lineCap: .round))
+                    .stroke(color, style: StrokeStyle(lineWidth: 12, lineCap: .round))
                     .rotationEffect(.degrees(-90))
                 Text(limit.formattedPercent)
-                    .font(.system(size: 46, weight: .bold, design: .rounded))
+                    .font(.system(size: 36, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
             }
-            .frame(width: 160, height: 160)
+            .frame(width: 128, height: 128)
 
-            VStack(spacing: 6) {
+            VStack(spacing: 4) {
                 TimelineView(.periodic(from: .now, by: 1)) { context in
                     Text(PaceCalculator.formatCountdown(limit.resetsAt, now: context.date))
-                        .font(.system(size: 44, weight: .bold, design: .monospaced))
+                        .font(.system(size: 34, weight: .bold, design: .monospaced))
                         .monospacedDigit()
                         .foregroundStyle(.white)
                         .lineLimit(1)
@@ -435,7 +435,7 @@ private struct KPICard: View {
                 }
 
                 Text(PaceCalculator.formatAbsoluteReset(limit.resetsAt))
-                    .font(.system(size: 15, weight: .medium))
+                    .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(.white.opacity(0.6))
                     .multilineTextAlignment(.center)
                     .lineLimit(2)
@@ -445,16 +445,16 @@ private struct KPICard: View {
             Divider()
                 .background(Color.white.opacity(0.1))
 
-            VStack(spacing: 12) {
+            VStack(spacing: 8) {
                 PaceDetailRow(icon: "chart.line.uptrend.xyaxis", label: "Projection à l'échéance", value: projectionText)
                 PaceDetailRow(icon: "bolt.fill", label: "Budget restant", value: budgetText)
                 PaceDetailRow(icon: "pause.circle.fill", label: "Pause pour revenir dans le rythme", value: pauseText)
             }
         }
-        .padding(18)
+        .padding(14)
         .frame(maxWidth: .infinity)
         .background(Color.white.opacity(0.05))
-        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .clipShape(RoundedRectangle(cornerRadius: 18))
     }
 }
 
@@ -466,17 +466,17 @@ private struct PaceDetailRow: View {
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: icon)
-                .font(.system(size: 17))
+                .font(.system(size: 15))
                 .foregroundStyle(.white.opacity(0.4))
-                .frame(width: 18)
+                .frame(width: 16)
             Text(label)
-                .font(.system(size: 17))
+                .font(.system(size: 14))
                 .foregroundStyle(.white.opacity(0.7))
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
             Spacer()
             Text(value)
-                .font(.system(size: 19, weight: .semibold))
+                .font(.system(size: 16, weight: .semibold))
                 .foregroundStyle(.white)
         }
     }
