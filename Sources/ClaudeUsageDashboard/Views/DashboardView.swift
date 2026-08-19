@@ -38,15 +38,15 @@ struct DashboardView: View {
         return VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 8) {
                 Image(systemName: "heart.text.square.fill")
-                    .font(.system(size: 14))
+                    .font(.system(size: 16))
                     .foregroundStyle(downCount == 0 ? .green : .red)
                 Text("Health checks")
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(.white)
                 Spacer()
                 if downCount > 0 {
                     Text("\(downCount)")
-                        .font(.system(size: 13, weight: .bold))
+                        .font(.system(size: 15, weight: .bold))
                         .foregroundStyle(.white)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 2)
@@ -68,7 +68,7 @@ struct DashboardView: View {
                 .padding(.vertical, 4)
             }
         }
-        .frame(width: 240)
+        .frame(width: 210)
         .frame(maxHeight: .infinity)
         .background(Color.white.opacity(0.04))
         .overlay(
@@ -114,7 +114,7 @@ struct DashboardView: View {
     private var header: some View {
         HStack(spacing: 16) {
             statusLine
-                .font(.system(size: 19, weight: .semibold))
+                .font(.system(size: 21, weight: .semibold))
 
             Spacer()
 
@@ -136,9 +136,9 @@ struct DashboardView: View {
             HStack(spacing: 6) {
                 Image(systemName: "waveform.path.ecg")
                 Text("\(urlMonitor.urls.count)")
-                    .font(.system(size: 13, weight: .bold))
+                    .font(.system(size: 15, weight: .bold))
             }
-            .font(.system(size: 15, weight: .semibold))
+            .font(.system(size: 17, weight: .semibold))
             .foregroundStyle(.white)
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
@@ -165,7 +165,7 @@ struct DashboardView: View {
             triggerRefresh()
         } label: {
             Image(systemName: "arrow.clockwise")
-                .font(.system(size: 16, weight: .semibold))
+                .font(.system(size: 18, weight: .semibold))
                 .rotationEffect(.degrees(isRefreshing ? 360 : 0))
                 .animation(isRefreshing ? .linear(duration: 0.8).repeatForever(autoreverses: false) : .default, value: isRefreshing)
                 .foregroundStyle(.white)
@@ -253,7 +253,7 @@ private struct KPICard: View {
         VStack(spacing: 10) {
             HStack(spacing: 8) {
                 Text(title)
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(.system(size: 19, weight: .semibold))
                     .foregroundStyle(.gray)
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
@@ -264,7 +264,7 @@ private struct KPICard: View {
                     Image(systemName: rhythmIcon)
                     Text(rhythmText)
                 }
-                .font(.system(size: 13, weight: .semibold))
+                .font(.system(size: 15, weight: .semibold))
                 .foregroundStyle(color)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 5)
@@ -282,15 +282,15 @@ private struct KPICard: View {
                     .stroke(color, style: StrokeStyle(lineWidth: 12, lineCap: .round))
                     .rotationEffect(.degrees(-90))
                 Text(limit.formattedPercent)
-                    .font(.system(size: 36, weight: .bold, design: .rounded))
+                    .font(.system(size: 39, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
             }
-            .frame(width: 128, height: 128)
+            .frame(width: 136, height: 136)
 
             VStack(spacing: 4) {
                 TimelineView(.periodic(from: .now, by: 1)) { context in
                     Text(PaceCalculator.formatCountdown(limit.resetsAt, now: context.date))
-                        .font(.system(size: 34, weight: .bold, design: .monospaced))
+                        .font(.system(size: 37, weight: .bold, design: .monospaced))
                         .monospacedDigit()
                         .foregroundStyle(.white)
                         .lineLimit(1)
@@ -298,7 +298,7 @@ private struct KPICard: View {
                 }
 
                 Text(PaceCalculator.formatAbsoluteReset(limit.resetsAt))
-                    .font(.system(size: 13, weight: .medium))
+                    .font(.system(size: 15, weight: .medium))
                     .foregroundStyle(.white.opacity(0.6))
                     .multilineTextAlignment(.center)
                     .lineLimit(2)
@@ -329,17 +329,17 @@ private struct PaceDetailRow: View {
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: icon)
-                .font(.system(size: 15))
+                .font(.system(size: 17))
                 .foregroundStyle(.white.opacity(0.4))
                 .frame(width: 16)
             Text(label)
-                .font(.system(size: 14))
+                .font(.system(size: 16))
                 .foregroundStyle(.white.opacity(0.7))
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
             Spacer()
             Text(value)
-                .font(.system(size: 16, weight: .semibold))
+                .font(.system(size: 18, weight: .semibold))
                 .foregroundStyle(.white)
         }
     }
@@ -359,7 +359,7 @@ private struct URLStatusRow: View {
             VStack(alignment: .leading, spacing: 5) {
                 HStack(alignment: .top, spacing: 8) {
                     Text(status?.title ?? url)
-                        .font(.system(size: 14, weight: .medium))
+                        .font(.system(size: 16, weight: .medium))
                         .foregroundStyle(.white)
                         .lineLimit(1)
                         .truncationMode(.middle)
@@ -375,7 +375,7 @@ private struct URLStatusRow: View {
 
                 if status?.title != nil {
                     Text(url)
-                        .font(.system(size: 11))
+                        .font(.system(size: 13))
                         .foregroundStyle(.white.opacity(0.45))
                         .lineLimit(1)
                         .truncationMode(.middle)
@@ -384,19 +384,19 @@ private struct URLStatusRow: View {
                 if let lastCheck = status?.lastCheck {
                     HStack(alignment: .top, spacing: 8) {
                         Text(lastCheck.formatted(date: .numeric, time: .standard))
-                            .font(.system(size: 11))
+                            .font(.system(size: 13))
                             .foregroundStyle(.white.opacity(0.45))
                             .lineLimit(1)
 
                         Spacer()
 
                         Text(Self.relativeText(since: lastCheck, now: context.date))
-                            .font(.system(size: 11, weight: .semibold))
+                            .font(.system(size: 13, weight: .semibold))
                             .foregroundStyle(.white.opacity(0.6))
                     }
                 } else {
                     Text("en attente…")
-                        .font(.system(size: 11))
+                        .font(.system(size: 13))
                         .foregroundStyle(.white.opacity(0.4))
                 }
             }
