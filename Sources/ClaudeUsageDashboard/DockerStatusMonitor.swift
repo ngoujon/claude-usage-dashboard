@@ -27,9 +27,16 @@ final class DockerStatusMonitor: ObservableObject {
     }
 
     private func checkAll() async {
-        for project in projects {
-            let isUp = await Self.isComposeUp(at: project.projectPath)
-            statuses[project.id] = DockerProjectStatus(isUp: isUp, lastChecked: Date())
+        await withTaskGroup(of: (String, Bool).self) { group in
+            for project in projects {
+                group.addTask {
+                    let isUp = await Self.isComposeUp(at: project.projectPath)
+                    return (project.id, isUp)
+                }
+            }
+            for await (id, isUp) in group {
+                statuses[id] = DockerProjectStatus(isUp: isUp, lastChecked: Date())
+            }
         }
     }
 
