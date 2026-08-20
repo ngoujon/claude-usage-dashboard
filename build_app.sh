@@ -22,8 +22,3 @@ echo "==> Ad-hoc code signing..."
 codesign --force --deep --sign - "$APP_DIR"
 
 echo "==> Done: $APP_DIR"
-echo ""
-echo "Prochaines étapes manuelles :"
-echo "  1. Ouvre l'app une première fois (clic droit > Ouvrir, car elle n'est pas notarisée)."
-echo "  2. Une icône apparaît dans la barre de menu."
-echo "  3. Clique dessus > 'Ouvrir le tableau de bord' pour la fenêtre plein écran."

@@ -212,7 +212,7 @@ private enum KPIColumn {
     static let title: CGFloat = 100
     static let usage: CGFloat = 80 + 8 + 110
     static let rhythm: CGFloat = 150
-    static let reset: CGFloat = 175
+    static let reset: CGFloat = 230
     static let projection: CGFloat = 85
 }
 
