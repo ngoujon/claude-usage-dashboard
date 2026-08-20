@@ -315,7 +315,7 @@ private struct KPIRow: View {
 
             if showingResetAndProjection {
                 TimelineView(.periodic(from: .now, by: 1)) { context in
-                    VStack(alignment: .leading, spacing: 2) {
+                    VStack(alignment: .center, spacing: 2) {
                         Text(PaceCalculator.formatCountdown(limit.resetsAt, now: context.date))
                             .font(.system(size: 24, weight: .bold, design: .monospaced))
                             .monospacedDigit()
@@ -327,7 +327,7 @@ private struct KPIRow: View {
                             .lineLimit(1)
                     }
                 }
-                .frame(width: KPIColumn.reset, alignment: .leading)
+                .frame(width: KPIColumn.reset, alignment: .center)
 
                 Text(projectionText)
                     .font(.system(size: 30, weight: .bold, design: .rounded))
