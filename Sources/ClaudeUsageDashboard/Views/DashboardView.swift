@@ -94,13 +94,13 @@ struct DashboardView: View {
                         KPIHeaderRow(showingResetAndProjection: !showingURLSidebar)
                         VStack(spacing: 10) {
                             if let session = usageService.snapshot.session {
-                                KPIRow(title: "Session 5h", limit: session, showingResetAndProjection: !showingURLSidebar)
+                                KPIRow(title: "Session", limit: session, showingResetAndProjection: !showingURLSidebar)
                             }
                             if let weekly = usageService.snapshot.weekly {
-                                KPIRow(title: "Hebdo tous modèles", limit: weekly, showingResetAndProjection: !showingURLSidebar)
+                                KPIRow(title: "Hebdo", limit: weekly, showingResetAndProjection: !showingURLSidebar)
                             }
                             if let fable = usageService.snapshot.fable {
-                                KPIRow(title: "Fable hebdo", limit: fable, showingResetAndProjection: !showingURLSidebar)
+                                KPIRow(title: "Fable", limit: fable, showingResetAndProjection: !showingURLSidebar)
                             }
                         }
                     }
@@ -210,7 +210,7 @@ struct DashboardView: View {
 
 private enum KPIColumn {
     static let title: CGFloat = 150
-    static let usage: CGFloat = 68 + 8 + 150
+    static let usage: CGFloat = 80 + 8 + 150
     static let rhythm: CGFloat = 170
     static let reset: CGFloat = 200
     static let projection: CGFloat = 110
@@ -283,9 +283,9 @@ private struct KPIRow: View {
 
             HStack(spacing: 8) {
                 Text(limit.formattedPercent)
-                    .font(.system(size: 26, weight: .bold, design: .rounded))
+                    .font(.system(size: 32, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
-                    .frame(width: 68, alignment: .leading)
+                    .frame(width: 80, alignment: .leading)
 
                 ZStack(alignment: .leading) {
                     Capsule()
@@ -317,12 +317,12 @@ private struct KPIRow: View {
                 TimelineView(.periodic(from: .now, by: 1)) { context in
                     VStack(alignment: .leading, spacing: 2) {
                         Text(PaceCalculator.formatCountdown(limit.resetsAt, now: context.date))
-                            .font(.system(size: 20, weight: .bold, design: .monospaced))
+                            .font(.system(size: 24, weight: .bold, design: .monospaced))
                             .monospacedDigit()
                             .foregroundStyle(.white)
                             .lineLimit(1)
                         Text(PaceCalculator.formatAbsoluteReset(limit.resetsAt))
-                            .font(.system(size: 13, weight: .medium))
+                            .font(.system(size: 16, weight: .medium))
                             .foregroundStyle(.white.opacity(0.6))
                             .lineLimit(1)
                     }
@@ -330,7 +330,7 @@ private struct KPIRow: View {
                 .frame(width: KPIColumn.reset, alignment: .leading)
 
                 Text(projectionText)
-                    .font(.system(size: 24, weight: .bold, design: .rounded))
+                    .font(.system(size: 30, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
                     .lineLimit(1)
                     .frame(width: KPIColumn.projection, alignment: .leading)
