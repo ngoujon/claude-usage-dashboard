@@ -4,10 +4,10 @@ enum PaceCalculator {
     static let sessionPeriod: TimeInterval = 5 * 3600
     static let weeklyPeriod: TimeInterval = 7 * 24 * 3600
     static let paceTolerance: Double = 5
-    /// Projection thresholds for the pause-needed estimate: ahead of pace at/above 101%,
-    /// "dans le rythme" between 90% and 100%.
-    static let aheadProjectionThreshold: Double = 101
+    /// Projection thresholds for the pause-needed estimate: ahead of pace above 100%
+    /// (pauseNeeded > 0 in that case), "dans le rythme" between 90% and 100%, "en retard" below 90%.
     static let onPaceProjectionTarget: Double = 100
+    static let behindProjectionThreshold: Double = 90
 
     static func parseISODate(_ iso: String?) -> Date? {
         guard let iso else { return nil }

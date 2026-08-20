@@ -214,6 +214,7 @@ private enum KPIColumn {
     static let rhythm: CGFloat = 150
     static let reset: CGFloat = 230
     static let projection: CGFloat = 85
+    static let pause: CGFloat = 90
 }
 
 private struct KPIHeaderRow: View {
@@ -227,6 +228,7 @@ private struct KPIHeaderRow: View {
             if showingResetAndProjection {
                 Text("Reset").frame(width: KPIColumn.reset, alignment: .center)
                 Text("Projection").frame(width: KPIColumn.projection, alignment: .center)
+                Text("Pause").frame(width: KPIColumn.pause, alignment: .center)
             }
             Spacer(minLength: 0)
         }
@@ -271,6 +273,12 @@ private struct KPIRow: View {
     private var projectionText: String {
         guard let pace = limit.pace else { return "—" }
         return pace.projectedPercent < 999 ? "\(Int(pace.projectedPercent.rounded()))%" : ">999%"
+    }
+
+    /// Only meaningful while ahead of pace (projection > 100%, i.e. pauseNeeded > 0); "N/A" otherwise.
+    private var pauseText: String {
+        guard let pace = limit.pace, pace.pauseNeeded > 0 else { return "N/A" }
+        return PaceCalculator.formatDuration(pace.pauseNeeded)
     }
 
     var body: some View {
@@ -334,6 +342,12 @@ private struct KPIRow: View {
                     .foregroundStyle(.white)
                     .lineLimit(1)
                     .frame(width: KPIColumn.projection, alignment: .leading)
+
+                Text(pauseText)
+                    .font(.system(size: 18, weight: .semibold, design: .rounded))
+                    .foregroundStyle(pauseText == "N/A" ? .white.opacity(0.4) : .white)
+                    .lineLimit(1)
+                    .frame(width: KPIColumn.pause, alignment: .leading)
             }
 
             Spacer(minLength: 0)
