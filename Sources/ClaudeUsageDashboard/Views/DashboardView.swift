@@ -209,11 +209,11 @@ struct DashboardView: View {
 }
 
 private enum KPIColumn {
-    static let title: CGFloat = 150
-    static let usage: CGFloat = 80 + 8 + 150
-    static let rhythm: CGFloat = 170
-    static let reset: CGFloat = 200
-    static let projection: CGFloat = 110
+    static let title: CGFloat = 100
+    static let usage: CGFloat = 80 + 8 + 110
+    static let rhythm: CGFloat = 150
+    static let reset: CGFloat = 175
+    static let projection: CGFloat = 85
 }
 
 private struct KPIHeaderRow: View {
@@ -233,7 +233,7 @@ private struct KPIHeaderRow: View {
         .font(.system(size: 12, weight: .semibold))
         .foregroundStyle(.white.opacity(0.4))
         .textCase(.uppercase)
-        .padding(.horizontal, 16 + 16)
+        .padding(.horizontal, 16)
     }
 }
 
@@ -266,7 +266,7 @@ private struct KPIRow: View {
         return "arrow.right.circle.fill"
     }
 
-    private let progressBarWidth: CGFloat = 150
+    private let progressBarWidth: CGFloat = 110
 
     private var projectionText: String {
         guard let pace = limit.pace else { return "—" }
