@@ -3,6 +3,7 @@ import SwiftUI
 struct DashboardView: View {
     @ObservedObject var usageService: UsageService
     @ObservedObject var urlMonitor: URLMonitor
+    @ObservedObject var tokenMonitor: TokenMonitor
     @State private var showingSetup = false
     @State private var isRefreshing = false
     @State private var showingURLSidebar = true
@@ -102,6 +103,7 @@ struct DashboardView: View {
                             if let fable = usageService.snapshot.fable {
                                 KPIRow(title: "Fable", limit: fable, showingResetAndProjection: !showingURLSidebar)
                             }
+                            TokenRow(snapshot: tokenMonitor.snapshot, showingResetAndProjection: !showingURLSidebar)
                         }
                     }
                     .padding(.horizontal, 16)
@@ -158,7 +160,8 @@ struct DashboardView: View {
         Task {
             async let usage: Void = usageService.refresh()
             async let urls: Void = urlMonitor.checkAll()
-            _ = await (usage, urls)
+            async let tokens: Void = tokenMonitor.refresh()
+            _ = await (usage, urls, tokens)
             isRefreshing = false
         }
     }
@@ -357,6 +360,109 @@ private struct KPIRow: View {
         .frame(maxWidth: .infinity)
         .background(Color.white.opacity(0.05))
         .clipShape(RoundedRectangle(cornerRadius: 14))
+    }
+}
+
+
+/// Live token footprint of the Claude Code sessions currently running on this machine.
+private struct TokenRow: View {
+    let snapshot: TokenUsageSnapshot
+    let showingResetAndProjection: Bool
+
+    private var isIdle: Bool { snapshot.activeCount == 0 }
+
+    private var sessionsText: String {
+        switch snapshot.activeCount {
+        case 0: return "aucune session"
+        case 1: return "1 session"
+        default: return "\(snapshot.activeCount) sessions"
+        }
+    }
+
+    var body: some View {
+        HStack(spacing: 16) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Tokens")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(.gray)
+                Text(sessionsText)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(.white.opacity(isIdle ? 0.3 : 0.5))
+            }
+            .lineLimit(1)
+            .frame(width: KPIColumn.title, alignment: .leading)
+
+            tokenFigure(
+                icon: "arrow.down",
+                tint: .blue,
+                text: TokenMonitor.formatRate(snapshot.inputRate),
+                caption: "in · moy. 60 s"
+            )
+            .frame(width: KPIColumn.usage, alignment: .leading)
+
+            tokenFigure(
+                icon: "arrow.up",
+                tint: .purple,
+                text: TokenMonitor.formatRate(snapshot.outputRate),
+                caption: "out · moy. 60 s"
+            )
+            .frame(width: KPIColumn.rhythm, alignment: .leading)
+
+            if showingResetAndProjection {
+                topSessionDetail
+                    .frame(width: KPIColumn.reset, alignment: .center)
+                Spacer().frame(width: KPIColumn.projection)
+                Spacer().frame(width: KPIColumn.pause)
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .frame(maxWidth: .infinity)
+        .background(Color.white.opacity(0.05))
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+    }
+
+    private func tokenFigure(icon: String, tint: Color, text: String, caption: String) -> some View {
+        VStack(alignment: .leading, spacing: 1) {
+            HStack(spacing: 6) {
+                Image(systemName: icon)
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundStyle(isIdle ? Color.white.opacity(0.25) : tint)
+                Text(isIdle ? "—" : text)
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .monospacedDigit()
+                    .foregroundStyle(isIdle ? .white.opacity(0.35) : .white)
+            }
+            Text(caption)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(.white.opacity(0.4))
+        }
+        .lineLimit(1)
+    }
+
+    @ViewBuilder
+    private var topSessionDetail: some View {
+        if let top = snapshot.topSession {
+            VStack(spacing: 2) {
+                Text("↓ \(TokenMonitor.formatTokens(snapshot.contextTokens)) · ↑ \(TokenMonitor.formatTokens(snapshot.outputTokens))")
+                    .font(.system(size: 16, weight: .semibold))
+                    .monospacedDigit()
+                    .foregroundStyle(.white.opacity(0.8))
+                    .lineLimit(1)
+                Text("cumul · \(top.project)")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.45))
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+            }
+            .help("Cumul contexte envoyé et tokens générés par les sessions actives — la plus active : \(top.project)")
+        } else {
+            Text("—")
+                .font(.system(size: 16, weight: .medium))
+                .foregroundStyle(.white.opacity(0.3))
+        }
     }
 }
 

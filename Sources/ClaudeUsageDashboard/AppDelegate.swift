@@ -6,6 +6,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private let usageService = UsageService()
     private let urlMonitor = URLMonitor()
+    private let tokenMonitor = TokenMonitor()
     private var dashboardWindowController: DashboardWindowController?
     private var urlMonitorWindowController: URLMonitorWindowController?
     private var cancellables = Set<AnyCancellable>()
@@ -22,6 +23,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         usageService.start()
         urlMonitor.start()
+        tokenMonitor.start()
 
         showDashboard()
     }
@@ -53,7 +55,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if dashboardWindowController == nil {
             dashboardWindowController = DashboardWindowController(
                 usageService: usageService,
-                urlMonitor: urlMonitor
+                urlMonitor: urlMonitor,
+                tokenMonitor: tokenMonitor
             )
         }
         NSApp.activate(ignoringOtherApps: true)
@@ -65,7 +68,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         Task {
             async let usage: Void = usageService.refresh()
             async let urls: Void = urlMonitor.checkAll()
-            _ = await (usage, urls)
+            async let tokens: Void = tokenMonitor.refresh()
+            _ = await (usage, urls, tokens)
         }
     }
 

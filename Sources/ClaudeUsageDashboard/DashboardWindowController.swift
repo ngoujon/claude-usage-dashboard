@@ -9,7 +9,7 @@ final class DashboardWindowController: NSWindowController, NSWindowDelegate {
     private let usageService: UsageService
     private let displaySleepBlocker = DisplaySleepBlocker()
 
-    init(usageService: UsageService, urlMonitor: URLMonitor) {
+    init(usageService: UsageService, urlMonitor: URLMonitor, tokenMonitor: TokenMonitor) {
         self.usageService = usageService
 
         let window = NSWindow(
@@ -28,7 +28,8 @@ final class DashboardWindowController: NSWindowController, NSWindowDelegate {
         window.isReleasedWhenClosed = false
         window.contentView = NSHostingView(rootView: DashboardView(
             usageService: usageService,
-            urlMonitor: urlMonitor
+            urlMonitor: urlMonitor,
+            tokenMonitor: tokenMonitor
         ))
         window.delegate = self
     }
