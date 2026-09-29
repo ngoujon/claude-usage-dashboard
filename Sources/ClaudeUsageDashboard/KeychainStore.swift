@@ -8,7 +8,7 @@ import Security
 /// reappears on every restart. UserDefaults has no such gate.
 enum KeychainStore {
     private static let defaultsKey = "usageConfig"
-    private static let legacyService = "com.nicolasgoujon.claudeusagedashboard"
+    private static let legacyService = "com.ngoujon.claudeusagedashboard"
     private static let legacyAccount = "usage-config"
 
     struct Config: Codable {

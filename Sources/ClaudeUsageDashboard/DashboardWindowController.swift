@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 
 extension Notification.Name {
-    static let showSetupSheet = Notification.Name("com.nicolasgoujon.claudeusagedashboard.showSetupSheet")
+    static let showSetupSheet = Notification.Name("com.ngoujon.claudeusagedashboard.showSetupSheet")
 }
 
 final class DashboardWindowController: NSWindowController, NSWindowDelegate {

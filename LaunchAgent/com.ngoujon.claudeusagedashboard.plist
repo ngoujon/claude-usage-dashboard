@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>com.nicolasgoujon.claudeusagedashboard</string>
+    <string>com.ngoujon.claudeusagedashboard</string>
     <key>ProgramArguments</key>
     <array>
         <string>/usr/bin/open</string>
