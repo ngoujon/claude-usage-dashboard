@@ -7,7 +7,7 @@
     <key>CFBundleDisplayName</key>
     <string>Claude Usage Dashboard</string>
     <key>CFBundleIdentifier</key>
-    <string>com.ngoujon.claudeusagedashboard</string>
+    <string>com.nicolasgoujon.claudeusagedashboard</string>
     <key>CFBundleIconFile</key>
     <string>AppIcon</string>
     <key>CFBundleVersion</key>
