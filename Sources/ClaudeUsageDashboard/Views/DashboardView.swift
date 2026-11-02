@@ -6,14 +6,19 @@ struct DashboardView: View {
     @ObservedObject var tokenMonitor: TokenMonitor
     @State private var showingSetup = false
     @State private var isRefreshing = false
-    @State private var showingURLSidebar = true
+    // Remembered across launches; closed by default so the projection column stays visible.
+    @AppStorage("showingURLSidebar") private var showingURLSidebar = false
+
+    private var isURLSidebarVisible: Bool {
+        showingURLSidebar && !urlMonitor.urls.isEmpty
+    }
 
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
             HStack(spacing: 0) {
                 content
-                if showingURLSidebar && !urlMonitor.urls.isEmpty {
+                if isURLSidebarVisible {
                     urlSidebar
                         .transition(.move(edge: .trailing))
                 }
@@ -92,18 +97,18 @@ struct DashboardView: View {
 
                 if hasData {
                     VStack(spacing: 6) {
-                        KPIHeaderRow(showingResetAndProjection: !showingURLSidebar)
+                        KPIHeaderRow(showingResetAndProjection: !isURLSidebarVisible)
                         VStack(spacing: 10) {
                             if let session = usageService.snapshot.session {
-                                KPIRow(title: "Session", limit: session, showingResetAndProjection: !showingURLSidebar)
+                                KPIRow(title: "Session", limit: session, showingResetAndProjection: !isURLSidebarVisible)
                             }
                             if let weekly = usageService.snapshot.weekly {
-                                KPIRow(title: "Hebdo", limit: weekly, showingResetAndProjection: !showingURLSidebar)
+                                KPIRow(title: "Hebdo", limit: weekly, showingResetAndProjection: !isURLSidebarVisible)
                             }
                             if let fable = usageService.snapshot.fable {
-                                KPIRow(title: "Fable", limit: fable, showingResetAndProjection: !showingURLSidebar)
+                                KPIRow(title: "Fable", limit: fable, showingResetAndProjection: !isURLSidebarVisible)
                             }
-                            TokenRow(snapshot: tokenMonitor.snapshot, showingResetAndProjection: !showingURLSidebar)
+                            TokenRow(snapshot: tokenMonitor.snapshot, showingResetAndProjection: !isURLSidebarVisible)
                         }
                     }
                     .padding(.horizontal, 16)

@@ -48,7 +48,34 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func updateStatusTitle() {
-        statusItem.button?.title = usageService.menuBarTitle
+        guard let button = statusItem.button else { return }
+        if let levels = usageService.menuBarLevels {
+            button.title = ""
+            button.image = Self.levelBarsImage(levels)
+        } else {
+            button.image = nil
+            button.title = usageService.menuBarTitle
+        }
+    }
+
+    /// Petites barres verticales façon histogramme, remplies selon chaque niveau.
+    private static func levelBarsImage(_ levels: [Double]) -> NSImage {
+        let barWidth: CGFloat = 4, gap: CGFloat = 2, height: CGFloat = 14
+        let width = CGFloat(levels.count) * barWidth + CGFloat(levels.count - 1) * gap
+        let image = NSImage(size: NSSize(width: width, height: height), flipped: false) { _ in
+            for (i, level) in levels.enumerated() {
+                let x = CGFloat(i) * (barWidth + gap)
+                let frame = NSRect(x: x, y: 0, width: barWidth, height: height)
+                NSColor.black.withAlphaComponent(0.3).setFill()
+                NSBezierPath(roundedRect: frame, xRadius: 1, yRadius: 1).fill()
+                let fillHeight = level > 0 ? max(1.5, height * CGFloat(level)) : 0
+                NSColor.black.setFill()
+                NSBezierPath(roundedRect: NSRect(x: x, y: 0, width: barWidth, height: fillHeight), xRadius: 1, yRadius: 1).fill()
+            }
+            return true
+        }
+        image.isTemplate = true
+        return image
     }
 
     @objc private func showDashboard() {

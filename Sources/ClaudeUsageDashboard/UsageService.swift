@@ -82,6 +82,15 @@ final class UsageService: ObservableObject {
         return parts.isEmpty ? "…" : parts.joined(separator: " · ")
     }
 
+    /// Remplissage (0…1) des barres de la barre de menus : session, hebdo, Fable.
+    /// nil tant qu'il n'y a rien à afficher (erreur ou aucune donnée).
+    var menuBarLevels: [Double]? {
+        guard snapshot.errorState == .none else { return nil }
+        let limits = [snapshot.session, snapshot.weekly, snapshot.fable]
+        guard limits.contains(where: { $0 != nil }) else { return nil }
+        return limits.map { min(max(($0?.percent ?? 0) / 100, 0), 1) }
+    }
+
     private static func buildSnapshot(from limits: [RawLimit]) -> UsageSnapshot {
         var snap = UsageSnapshot()
         snap.lastUpdated = Date()
