@@ -18,8 +18,19 @@ final class URLMonitor: ObservableObject {
     private let checkInterval: TimeInterval = 10 * 60
     private var timer: Timer?
 
+    /// Defaults domain used before the bundle identifier moved to com.ngoujon.
+    private let legacyDefaultsDomain = "com.nicolasgoujon.claudeusagedashboard"
+
     init() {
-        urls = UserDefaults.standard.stringArray(forKey: defaultsKey) ?? []
+        if let saved = UserDefaults.standard.stringArray(forKey: defaultsKey) {
+            urls = saved
+        } else if let legacy = UserDefaults(suiteName: legacyDefaultsDomain)?.stringArray(forKey: defaultsKey) {
+            // One-time migration so the health checks survive the bundle identifier change.
+            urls = legacy
+            UserDefaults.standard.set(legacy, forKey: defaultsKey)
+        } else {
+            urls = []
+        }
     }
 
     func start() {
