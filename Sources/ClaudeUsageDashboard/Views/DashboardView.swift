@@ -8,6 +8,11 @@ struct DashboardView: View {
     @State private var isRefreshing = false
     // Remembered across launches; closed by default so the projection column stays visible.
     @AppStorage("showingURLSidebar") private var showingURLSidebar = false
+    // Width chosen by dragging the sidebar's left edge, remembered across launches.
+    @AppStorage("urlSidebarWidth") private var urlSidebarWidth: Double = 260
+    @State private var sidebarDragStartWidth: Double?
+
+    private static let sidebarWidthRange: ClosedRange<Double> = 180...520
 
     private var isURLSidebarVisible: Bool {
         showingURLSidebar && !urlMonitor.urls.isEmpty
@@ -16,11 +21,20 @@ struct DashboardView: View {
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
-            HStack(spacing: 0) {
-                content
-                if isURLSidebarVisible {
-                    urlSidebar
-                        .transition(.move(edge: .trailing))
+            // The header sits above everything at full window width so its buttons stay
+            // on screen even when the KPI rows are wider than a small display.
+            VStack(spacing: 0) {
+                header
+                    .padding(.top, 6)
+                    .padding(.bottom, 6)
+                HStack(spacing: 0) {
+                    content
+                        .frame(minWidth: 0, maxWidth: .infinity, alignment: .topLeading)
+                        .clipped()
+                    if isURLSidebarVisible {
+                        urlSidebar
+                            .transition(.move(edge: .trailing))
+                    }
                 }
             }
         }
@@ -67,22 +81,44 @@ struct DashboardView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 2) {
                     ForEach(urlMonitor.urls, id: \.self) { url in
-                        URLStatusRow(url: url, status: urlMonitor.statuses[url])
+                        URLStatusRow(url: url, name: urlMonitor.displayName(for: url), status: urlMonitor.statuses[url])
                         Divider().background(Color.white.opacity(0.06))
                     }
                 }
                 .padding(.vertical, 4)
             }
         }
-        .frame(width: 210)
+        .frame(width: urlSidebarWidth)
         .frame(maxHeight: .infinity)
         .background(Color.white.opacity(0.04))
-        .overlay(
+        .overlay(alignment: .leading) { sidebarResizeHandle }
+    }
+
+    /// Thin strip on the sidebar's left edge: drag it to change the width (double-click resets it).
+    private var sidebarResizeHandle: some View {
+        ZStack {
+            Color.clear.frame(width: 8).contentShape(Rectangle())
             Rectangle()
-                .frame(width: 1)
-                .foregroundStyle(Color.white.opacity(0.08)),
-            alignment: .leading
+                .frame(width: sidebarDragStartWidth == nil ? 1 : 2)
+                .foregroundStyle(Color.white.opacity(sidebarDragStartWidth == nil ? 0.08 : 0.3))
+        }
+        .frame(maxHeight: .infinity)
+        .offset(x: -4)
+        .onHover { inside in
+            if inside { NSCursor.resizeLeftRight.push() } else { NSCursor.pop() }
+        }
+        .gesture(
+            DragGesture(minimumDistance: 1, coordinateSpace: .global)
+                .onChanged { value in
+                    let start = sidebarDragStartWidth ?? urlSidebarWidth
+                    sidebarDragStartWidth = start
+                    let proposed = start - value.translation.width
+                    urlSidebarWidth = min(max(proposed, Self.sidebarWidthRange.lowerBound), Self.sidebarWidthRange.upperBound)
+                }
+                .onEnded { _ in sidebarDragStartWidth = nil }
         )
+        .onTapGesture(count: 2) { urlSidebarWidth = 260 }
+        .help("Glisser pour ajuster la largeur · double-clic pour la réinitialiser")
     }
 
     @ViewBuilder
@@ -93,8 +129,6 @@ struct DashboardView: View {
 
         ScrollView {
             VStack(spacing: 12) {
-                header
-
                 if hasData {
                     VStack(spacing: 6) {
                         KPIHeaderRow(showingResetAndProjection: !isURLSidebarVisible)
@@ -116,7 +150,6 @@ struct DashboardView: View {
                     emptyState
                 }
             }
-            .padding(.top, 6)
             .padding(.bottom, 16)
         }
     }
@@ -125,16 +158,22 @@ struct DashboardView: View {
         HStack(spacing: 16) {
             statusLine
                 .font(.system(size: 21, weight: .semibold))
+                .lineLimit(1)
+                .truncationMode(.tail)
+                .layoutPriority(-1)
 
-            Spacer()
+            Spacer(minLength: 8)
 
             if !urlMonitor.urls.isEmpty {
                 urlSidebarToggle
+                    .fixedSize()
             }
 
             refreshButton
+                .fixedSize()
         }
         .padding(.horizontal, 20)
+        .frame(maxWidth: .infinity)
     }
 
     private var urlSidebarToggle: some View {
@@ -473,6 +512,7 @@ private struct TokenRow: View {
 
 private struct URLStatusRow: View {
     let url: String
+    let name: String
     let status: MonitoredURLStatus?
 
     private var dotColor: Color {
@@ -484,12 +524,12 @@ private struct URLStatusRow: View {
         TimelineView(.periodic(from: .now, by: 15)) { context in
             VStack(alignment: .leading, spacing: 5) {
                 HStack(alignment: .top, spacing: 8) {
-                    Text(status?.title ?? url)
+                    Text(name)
                         .font(.system(size: 16, weight: .medium))
                         .foregroundStyle(.white)
                         .lineLimit(1)
-                        .truncationMode(.middle)
-                        .help(url)
+                        .truncationMode(.tail)
+                        .help(name)
 
                     Spacer()
 
@@ -499,13 +539,12 @@ private struct URLStatusRow: View {
                         .help(downSinceHelpText(now: context.date))
                 }
 
-                if status?.title != nil {
-                    Text(url)
-                        .font(.system(size: 13))
-                        .foregroundStyle(.white.opacity(0.45))
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                }
+                Text(url)
+                    .font(.system(size: 13))
+                    .foregroundStyle(.white.opacity(0.45))
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                    .help(url)
 
                 if let lastCheck = status?.lastCheck {
                     HStack(alignment: .top, spacing: 8) {
